@@ -1,3 +1,6 @@
+// uva107
+// math, log
+
 #include <bits/stdc++.h>
 using namespace std;
 
