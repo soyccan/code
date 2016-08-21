@@ -1,0 +1,42 @@
+// uva1194
+// bipartite matching
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Edge {
+    int y,i;
+};
+
+vector<Edge> G[10000];
+int match[10000];
+bool used[10000];
+
+bool dfs(int x) {
+    for (Edge e : G[x]) {
+        if (used[e.y]) continue;
+        used[e.y] = true;
+        if (match[e.y] == -1 || dfs(match[e.y])) {
+            match[e.y] = x;
+            return true;
+        }
+    }
+    return false;
+}
+
+int main() {
+    int n,m,k,i,x,y;
+    while (cin>>n>>m>>k && n) {
+        for (int i=0; i<n; i++) G[i].clear();
+        while (k--) {
+            cin>>i>>x>>y;
+            G[x].push_back({y,i});
+        }
+        int ans=0;
+        memset(used, 0, sizeof used);
+        memset(match, -1, sizeof match);
+        for (int i=0; i<n; i++)
+            if (dfs(i)) ans++;
+        cout<<ans<<endl;
+    }
+    return 0;
+}
