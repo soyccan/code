@@ -3,20 +3,16 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-struct Edge {
-    int y,i;
-};
-
-vector<Edge> G[10000];
+vector<int> G[10000];
 int match[10000];
 bool used[10000];
 
 bool dfs(int x) {
-    for (Edge e : G[x]) {
-        if (used[e.y]) continue;
-        used[e.y] = true;
-        if (match[e.y] == -1 || dfs(match[e.y])) {
-            match[e.y] = x;
+    for (int y : G[x]) {
+        if (used[y]) continue;
+        used[y] = true;
+        if (match[y] == -1 || dfs(match[y])) {
+            match[y] = x;
             return true;
         }
     }
@@ -25,16 +21,18 @@ bool dfs(int x) {
 
 int main() {
     int n,m,k,i,x,y;
-    while (cin>>n>>m>>k && n) {
-        for (int i=0; i<n; i++) G[i].clear();
-        while (k--) {
-            cin>>i>>x>>y;
-            G[x].push_back({y,i});
+    while (cin>>n && n) {
+        cin>>m>>k;
+        for (int i=0; i<k; i++) {
+            cin>>j>>x>>y;
+            G[j].clear();
+            G[j].push_back(x);
+            G[j].push_back(y+200);
         }
         int ans=0;
         memset(used, 0, sizeof used);
         memset(match, -1, sizeof match);
-        for (int i=0; i<n; i++)
+        for (int i=0; i<k; i++)
             if (dfs(i)) ans++;
         cout<<ans<<endl;
     }
