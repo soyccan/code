@@ -23,17 +23,18 @@ int main() {
     int n,m,k,i,x,y;
     while (cin>>n && n) {
         cin>>m>>k;
-        for (int i=0; i<k; i++) {
-            cin>>j>>x>>y;
-            G[j].clear();
-            G[j].push_back(x);
-            G[j].push_back(y+200);
+        for (int i=0; i<n; i++) G[i].clear();
+        while (k--) {
+            cin>>i>>x>>y;
+            if (x==0 || y==0) continue;
+            G[x].push_back(y);
         }
         int ans=0;
-        memset(used, 0, sizeof used);
         memset(match, -1, sizeof match);
-        for (int i=0; i<k; i++)
+        for (int i=0; i<n; i++) {
+            memset(used, 0, sizeof used);
             if (dfs(i)) ans++;
+        }
         cout<<ans<<endl;
     }
     return 0;
