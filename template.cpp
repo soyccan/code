@@ -1,44 +1,55 @@
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
+#include <cctype>
+#include <climits>
 #include <cmath>
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <algorithm>
-#include <vector>
-#include <queue>
-#include <stack>
+#include <deque>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <limits>
+#include <list>
 #include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <utility>
+#include <vector>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 
 #define PB push_back
 #define PPB pop_back
 #define MS(s,v) memset(s,v,sizeof(s))
 #define PI pair<int,int>
 #define PD pair<double,double>
-#define PL pair<long long,long long>
 #define FF first
 #define SS second
+// #define int long long
 
 using namespace std;
-typedef long long ll;
-typedef unsigned long long ull;
-typedef double db;
-struct E {
+struct Edge {
     int t,w;
-    E(int _t,int _w) {
-        t=_t, w=_w;
-    }
-    bool operator<(const E& e) const {
-        return w<e.w;
+    Edge(int t,int w): t(t), w(w) {}
+    bool operator<(const Edge& e) const {
+        return w < e.w;
     }
 };
 int N,M;
 
-int main() {
+main() {
     ios::sync_with_stdio(0);
     cin.tie(0);
-
-
-
-
+    
+    
+    
+    
     return 0;
 }
