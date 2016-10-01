@@ -32,6 +32,7 @@
 #define PD pair<double,double>
 #define FF first
 #define SS second
+#define FOR(i,st,en) for (int i=st; i<=en; i++)
 // #define int long long
 
 using namespace std;
