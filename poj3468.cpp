@@ -1,87 +1,85 @@
 // poj3468
 // segment tree with lazy flag
-#include <cstdio>
-#include <algorithm>
+#include <iostream>
+#include <string>
+#include <utility>
+#define int long long
 using namespace std;
-typedef long long ll;
 struct Node {
-    Node *lc,*rc;
-    int l,r;
-    ll add, sum;
+    int l, r, add, sum;
 };
 int arr[100005];
-
-void build(Node* nd, int l, int r) {
-    nd->lc = new Node();
-    nd->rc = new Node();
-    nd->l = l;
-    nd->r = r;
-    nd->add = 0;
+Node seg[400005];
+inline void pushup(int i) {
+    seg[i].sum = seg[i*2].sum + seg[i*2+1].sum;
+}
+inline void pushdown(int i) {
+    if (seg[i].add) {
+        seg[i*2].sum += seg[i].add * (seg[i*2].r-seg[i*2].l+1);
+        seg[i*2+1].sum += seg[i].add * (seg[i*2+1].r-seg[i*2+1].l+1);
+        seg[i*2].add += seg[i].add;
+        seg[i*2+1].add += seg[i].add;
+        seg[i].add = 0;
+    }
+}
+inline void build(int i, int l, int r) {
+    seg[i].l = l;
+    seg[i].r = r;
+    seg[i].add = 0;
     if (l == r)
-        nd->sum = arr[l];
+        seg[i].sum = arr[l];
     else {
         int m = (l+r)/2;
-        build(nd->lc, l, m);
-        build(nd->rc, m+1, r);
-        nd->sum = nd->lc->sum + nd->rc->sum;
+        build(i*2, l, m);
+        build(i*2+1, m+1, r);
+        pushup(i);
     }
 }
-void add(Node* nd, int l, int r, ll v) {
-    printf("ADD add:%lld sum:%lld (%d %d) nd:(%d %d)\n", nd->add, nd->sum, l,r,nd->l,nd->r);
-    if (nd->add) {
-        nd->sum += nd->add*(nd->r - nd->l + 1);
-        nd->lc->add += nd->add;
-        nd->rc->add += nd->add;
-        nd->add = 0;
+inline void add(int i, int l, int r, int v) {
+    if (l <= seg[i].l && seg[i].r <= r) {
+        seg[i].sum += v * (seg[i].r - seg[i].l + 1);
+        seg[i].add += v;
+    } else {
+        int m = (seg[i].l + seg[i].r)/2;
+        pushdown(i);
+        if (l <= m)
+            add(i*2, l, r, v);
+        if (r > m)
+            add(i*2+1, l, r, v);
+        pushup(i);
     }
-
-    int m = (nd->l + nd->r)/2;
-    if (l == nd->l && r == nd->r)
-        nd->add += v;
-    else if (r <= m)
-        add(nd->lc, l, r, v);
-    else if (l > m)
-        add(nd->rc, l, r, v);
+}
+inline int sum(int i, int l, int r) {
+    if (l <= seg[i].l && seg[i].r <= r)
+        return seg[i].sum;
     else {
-        add(nd->lc, l, m, v);
-        add(nd->rc, m+1, r, v);
+        int m = (seg[i].l + seg[i].r)/2;
+        int res = 0;
+        pushdown(i);
+        if (l <= m)
+            res += sum(i*2, l, r);
+        if (r > m)
+            res += sum(i*2+1, l, r);
+        return res;
     }
 }
-ll sum(Node* nd, int l, int r) {
-    printf("SUM add:%lld sum:%lld (%d %d) nd:(%d %d)\n", nd->add, nd->sum, l,r,nd->l,nd->r);
-    if (nd->add) {
-        nd->sum += nd->add*(nd->r - nd->l + 1);
-        nd->lc->add += nd->add;
-        nd->rc->add += nd->add;
-        nd->add = 0;
-    }
-
-    int m = (nd->l + nd->r)/2;
-    if (l == nd->l && r == nd->r)
-        return nd->sum;
-    else if (r <= m)
-        return sum(nd->lc, l, r);
-    else if (l > m)
-        return sum(nd->rc, l, r);
-    else
-        return sum(nd->lc, l, m) + sum(nd->rc, m+1, r);
-}
-int main() {
+main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    string cmd;
     int n,q,a,b,v;
-    char cmd[5];
-    scanf("%d%d",&n,&q);
+    cin>>n>>q;
     for (int i=1; i<=n; i++)
-        scanf("%d",&arr[i]);
-    Node* root = new Node();
-    build(root,1,n);
+        cin>>arr[i];
+    build(1,1,n);
     while (q--) {
-        scanf("%s%d%d",cmd,&a,&b);
+        cin>>cmd>>a>>b;
         if (a > b) swap(a,b);
         if (cmd[0] == 'C') {
-            scanf("%d",&v);
-            add(root,a,b,v);
+            cin>>v;
+            add(1,a,b,v);
         } else {
-            printf("%lld\n",sum(root,a,b));
+            cout<<sum(1,a,b)<<'\n';
         }
     }
     return 0;
