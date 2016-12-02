@@ -1,3 +1,4 @@
+// Egyptian fraction
 #include <bits/stdc++.h>
 #define int long long
 #define MS(a,v) memset(a,v,sizeof a)
