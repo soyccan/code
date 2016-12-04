@@ -1,3 +1,4 @@
+// #include <bits/stdc++.h>
 #include <cctype>
 #include <climits>
 #include <cmath>
@@ -25,15 +26,16 @@
 #include <unordered_map>
 #include <unordered_set>
 
+// #define int long long
 #define PB push_back
 #define PPB pop_back
-#define MS(s,v) memset(s,v,sizeof(s))
 #define PI pair<int,int>
 #define PD pair<double,double>
 #define FF first
 #define SS second
+#define MS(s,v) memset(s,v,sizeof(s))
 #define FOR(i,st,en) for (int i=st; i<=en; i++)
-// #define int long long
+#define RFOR(i,st,en) for (int i=st; i>=en; i--)
 
 using namespace std;
 struct Edge {
@@ -48,9 +50,9 @@ int N,M;
 main() {
     ios::sync_with_stdio(0);
     cin.tie(0);
-    
-    
-    
-    
+
+
+
+
     return 0;
 }
