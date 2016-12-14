@@ -1,5 +1,5 @@
 // uva 820
-// max flow
+// max flow (Edmonds-Karp)
 #include <bits/stdc++.h>
 #define int long long
 #define MS(s,v) memset(s,v,sizeof(s))
