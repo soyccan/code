@@ -1,5 +1,5 @@
 // uva820
-// max flow
+// max flow (dinic)
 #include <bits/stdc++.h>
 #define int long long
 #define MS(a,v) memset(a,v,sizeof a)
@@ -8,9 +8,9 @@
 using namespace std;
 const int INF = 0x3f3f3f3f3f3f3f3fLL;
 int S,T,N;
-int dep[100];
-int vis[100];
-int cap[100][100];
+int dep[105];
+int iter[105];
+int cap[105][105];
 int bfs() {
     queue<int> q; q.push(S);
     MS(dep,-1); dep[S]=0;
@@ -26,11 +26,8 @@ int bfs() {
     return dep[T];
 }
 int dfs(int x,int nk) {
-//    cout<<'x'<<x<<endl;
     if (x==T) return nk;
-    if (vis[x]) return 0;
-    vis[x]=1;
-    FOR(y,1,N) {
+    for (int& y=iter[x]; y<=N; y++) {
         if (cap[x][y]>0 && dep[x]+1==dep[y]) {
             int f=dfs(y,min(nk,cap[x][y]));
             cap[x][y]-=f, cap[y][x]+=f;
@@ -40,8 +37,6 @@ int dfs(int x,int nk) {
     return 0;
 }
 main() {
-    freopen("in.txt","r",stdin);
-    freopen("out.txt","w",stdout);
     ios::sync_with_stdio(0);
     cin.tie(0);
     int tc=0,m,a,b,w;
@@ -51,11 +46,12 @@ main() {
         while (m--) {
             cin>>a>>b>>w;
             cap[a][b]+=w;
+            cap[b][a]+=w;
         }
         int ans=0,f;
         while (bfs()!=-1) {
             do {
-                MS(vis,0);
+                MS(iter,0);
                 f=dfs(S,INF);
                 ans+=f;
             } while (f);
