@@ -10,7 +10,6 @@ bool iscut[1000];
 int dfn;
 vector<int> G[1000];
 void dfs(int x,int p) {
-    cout<<'x'<<x<<endl;
     low[x]=pre[x]=++dfn;
     int chd=0;
     for (int y:G[x]) {
@@ -27,7 +26,6 @@ void dfs(int x,int p) {
     if (p==-1 && chd==1) iscut[x]=0;
 }
 main() {
-    freopen("in.txt","r",stdin);
     ios::sync_with_stdio(0);
     cin.tie(0);
     int n,x,y;
@@ -42,8 +40,8 @@ main() {
                 G[y].push_back(x);
             }
         }
+        MS(pre,0); MS(low,0); MS(iscut,0);
         dfn=0;
-        MS(pre,0x3f); MS(low,0x3f); MS(iscut,0);
         dfs(1,-1);
         int ans=0;
         FOR(i,1,n) if (iscut[i]) ans++;
