@@ -1,37 +1,39 @@
+// uva315
+// cut vertex
 #include <bits/stdc++.h>
 #define int long long
-#define MS(a,v) memset(a,v,sizeof a)
-#define FOR(i,l,r) for (int i=l; i<=r; ++i)
-#define RFOR(i,l,r) for (int i=l; i>=r; --i)
+#define MS(s,v) memset(s,v,sizeof(s))
+#define FOR(i,st,en) for (int i=st; i<=en; ++i)
+#define RFOR(i,st,en) for (int i=st; i>=en; --i)
 using namespace std;
-int low[1000];
-int pre[1000];
-bool iscut[1000];
-int dfn;
-vector<int> G[1000];
+const int N = 200;
+int vis[N],low[N],cnt;
+bool cut[N];
+vector<int> G[N];
 void dfs(int x,int p) {
-    low[x]=pre[x]=++dfn;
+    vis[x]=low[x]=++cnt;
+    cut[x]=0;
     int chd=0;
     for (int y:G[x]) {
-        if (!pre[y]) {
+        if (!vis[y]) {
             dfs(y,x);
             low[x]=min(low[x],low[y]);
-            if (low[y] >= pre[x])
-                iscut[x]=1;
-            chd++;
-        } else if (y!=p && pre[y]<pre[x]) {
-            low[x]=min(low[x],pre[y]);
+            if (low[y]>=vis[x]) cut[x]=1;
+            ++chd;
+        } else if (y!=p) {
+            low[x]=min(low[x],vis[y]);
         }
     }
-    if (p==-1 && chd==1) iscut[x]=0;
+    if (p==-1) cut[x]=(chd>1);
 }
 main() {
+#ifndef XD
     ios::sync_with_stdio(0);
     cin.tie(0);
-    int n,x,y;
+#endif
+    int n,x,y; string ln;
     while (cin>>n && n) {
         FOR(i,1,n) G[i].clear();
-        string ln;
         while (getline(cin,ln) && ln!="0") {
             stringstream ss(ln);
             ss>>x;
@@ -39,13 +41,11 @@ main() {
                 G[x].push_back(y);
                 G[y].push_back(x);
             }
+            cnt=0;
+            MS(vis,0);
+            dfs(1,-1);
         }
-        MS(pre,0); MS(low,0); MS(iscut,0);
-        dfn=0;
-        dfs(1,-1);
-        int ans=0;
-        FOR(i,1,n) if (iscut[i]) ans++;
-        cout<<ans<<'\n';
+        cout<<count(cut+1,cut+n+1,1)<<'\n';
     }
     return 0;
 }
