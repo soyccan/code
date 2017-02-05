@@ -40,8 +40,10 @@ Mat operator*(const Mat& x, const Mat& y) {
     if (x.c != y.r) { cout<<"ERR\n"; return z; }
     z.m=x.m, z.r=x.r, z.c=y.c;
     // cout<<x.r<<x.c<<y.r<<y.c<<endl;
-    FOR(i,0,x.r) FOR(j,0,y.c) FOR(k,0,x.c)
-        z.a[i][j] += x.a[i][k] * y.a[k][j];// % x.m;
+    FOR(i,0,x.r) FOR(j,0,y.c) FOR(k,0,x.c) {
+        z.a[i][j] += x.a[i][k] * y.a[k][j];
+        z.a[i][j] %= x.m;
+    }
     return z;
 }
 Mat operator%(Mat x, int m) {
@@ -54,7 +56,7 @@ Mat operator^(Mat x, int e) {
         // cout<<'e'<<e<<endl<<x<<y<<endl;
         if (e & 1) y = y * x % x.m;
         x = x * x % x.m;
-        e /= 2;
+        e >>= 1;
     }
     return y;
 }
@@ -72,11 +74,11 @@ main() {
         A.r = A.c = B.r = d;
         B.c = 1;
         A.m = B.m = m;
-        for (int i=d-1; i>=0; i--) cin>>A.a[0][i];
+        FOR(i,0,d) cin>>A.a[0][i];
         FOR(i,0,d) A.a[i+1][i]=1;
         for (int i=d-1; i>=0; i--) cin>>B.a[i][0];
         A=A%m, B=B%m;
-        cout<<((A^(n-1))*B).a[d-1][0]%m<<endl;
+        cout<<((A^(n-1))*B).a[d-1][0]%m<<'\n';
     }
 #ifdef soytw
     freopen("con","r",stdin);
