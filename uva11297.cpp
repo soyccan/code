@@ -6,15 +6,20 @@
 #define _FOR(i,start,end,step) for (int i=start; i!=end; i+=step)
 #define FOR(i,start,end) for (int i=start; i<end; ++i)
 using namespace std;
-// const long long INF = 0x3f3f3f3f3f3f3f3fLL;
-const int INF = 1e9;
 
 struct SegTree {
+    const int INF = 0x7fffffff;
     int Max[2005][2005], Min[2005][2005], n;
     int x, y, v; // update args
     int qt, qb, ql, qr, mx, mn; // query args and result
-    void query() { mx=-INF; mn=INF; query2d(1,1,n); }
-    void update() { update2d(1,1,n); }
+    void query() {
+        mx = -INF;
+        mn = INF;
+        query2d(1, 1, n);
+    }
+    void update() {
+        update2d(1, 1, n);
+    }
     void query1d(int i, int j, int l, int r) {
         if (ql <= l && r <= qr) {
             mx = max(mx, Max[i][j]);
@@ -46,7 +51,7 @@ struct SegTree {
         Min[i][j] = min(Min[i][j*2], Min[i][j*2+1]);
     }
     void update2d(int i, int t, int b) {
-        if (t == x && x == b) {
+        if (x == t && x == b) {
             update1d(i, 1, 1, n);
             return;
         }
@@ -56,45 +61,43 @@ struct SegTree {
         merge1d(i, 1, 1, n);
     }
     void merge1d(int i, int j, int l, int r) {
-        if (l == r) {
-            Max[i][j] = max(Max[i*2][j], Max[i*2+1][j]);
-            Min[i][j] = min(Min[i*2][j], Min[i*2+1][j]);
-            return;
-        }
+        Max[i][j] = max(Max[i*2][j], Max[i*2+1][j]);
+        Min[i][j] = min(Min[i*2][j], Min[i*2+1][j]);
+        if (l == r) return;
         int m = (l + r) / 2;
         merge1d(i, j*2, l, m);
         merge1d(i, j*2+1, m+1, r);
     }
-} tr;
+} T;
 
 main() {
 #ifdef soytw
     freopen("in.txt","r",stdin);
 #else
-
+    ios::sync_with_stdio(0);
+    cin.tie(0);
 #endif
     int n,q;
-    char cmd[3];
-    while (scanf("%d",&n)==1) {
+    string cmd;
+    while (cin>>n) {
+        T.n=n;
         FOR(i,1,n+1) {
             FOR(j,1,n+1) {
-                scanf("%d",&tr.v);
-                tr.x=i, tr.y=j;
-                tr.update();
+                cin>>T.v;
+                T.x=i, T.y=j;
+                T.update();
             }
         }
-        scanf("%d",&q);
+        cin>>q;
         while (q--) {
-            scanf("%s",cmd);
+            cin>>cmd;
             if (cmd[0]=='q') {
-                // query
-                scanf("%d%d%d%d", &tr.qt, &tr.ql, &tr.qb, &tr.qr);
-                tr.query();
-                printf("%d %d\n", tr.mx, tr.mn);
+                cin>>T.qt>>T.ql>>T.qb>>T.qr;
+                T.query();
+                cout<<T.mx<<' '<<T.mn<<'\n';
             } else {
-                // update
-                scanf("%d%d%d", &tr.x, &tr.y, &tr.v);
-                tr.update();
+                cin>>T.x>>T.y>>T.v;
+                T.update();
             }
         }
     }
