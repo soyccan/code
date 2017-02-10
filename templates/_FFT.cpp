@@ -33,3 +33,11 @@ vector<complex<double>> fft(const vector<complex<double>>& polynomial) {
     }
     return val;
 }
+vector<complex<double>> ifft(const vector<complex<double>>& polynomial) {
+    int n = polynomial.size();
+    vector<complex<double>> val(fft(polynomial));
+    vector<complex<double>> ival(n);
+    for (int i=0; i<n; i++)
+        ival[i] = val[(n-i)%n] / (double)n;
+    return ival;
+}
