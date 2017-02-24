@@ -3,8 +3,8 @@
 #include <bits/stdc++.h>
 #define int long long
 #define MS(s,v) memset(s,v,sizeof(s))
-#define _FOR(i,start,end,step) for (int i=start; i!=end; i+=step)
-#define FOR(i,start,end) for (int i=start; i<end; ++i)
+#define FOR(i,end) for (int i=0; i<end; ++i)
+#define FOR1(i,end) for (int i=1; i<=end; ++i)
 using namespace std;
 const long long INF = 0x3f3f3f3f3f3f3f3fLL;
 main() {
