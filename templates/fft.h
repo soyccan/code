@@ -1,6 +1,9 @@
 // implemented with complex floating number and recursive
 // very inefficient
 
+#ifndef _FFT_H
+#define _FFT_H
+
 #include <complex>
 using std::complex;
 
@@ -53,3 +56,5 @@ struct FFT {
         return val;
     }
 };
+
+#endif
