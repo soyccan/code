@@ -28,10 +28,7 @@ using std::swap;
 using std::to_string;
 
 template<typename T>
-class _MatrixBase {};
-
-template<typename T>
-class Matrix : public _MatrixBase<T> {
+class Matrix {
 protected:
     vector<vector<T>> _arr;
     size_t _rows, _cols;
@@ -59,10 +56,10 @@ public:
     friend Matrix<U> operator^(const Matrix<U>& x, const Matrix<U>& y);
 
     template<typename U>
-    friend Matrix<U> _mul(const Matrix<U>& x, const Matrix<U>& y, U mod);
+    friend Matrix<U> mul(const Matrix<U>& x, const Matrix<U>& y, U mod);
 
     template<typename U>
-    friend Matrix<U> _pow(const Matrix<U>& x, const Matrix<U>& y, U mod);
+    friend Matrix<U> pow(const Matrix<U>& x, U e, U mod);
 
     Matrix(size_t rows=0, size_t cols=0) {
         this->_arr.resize(rows, vector<T>(cols));
@@ -98,6 +95,13 @@ public:
         FOR(i, 0, this->_rows)
             FOR(j, 0, this->_cols)
                 this->_arr[i][j] /= t;
+        return *this;
+    }
+    Matrix& operator%=(T t) {
+        // TODO: separate integral and float
+        FOR(i, 0, this->_rows)
+            FOR(j, 0, this->_cols)
+                this->_arr[i][j] %= t;
         return *this;
     }
     static Matrix identity_matrix(size_t size) {
@@ -142,6 +146,9 @@ template<typename T>
 Matrix<T> operator/(Matrix<T> x, T y) { return x /= y; }
 
 template<typename T>
+Matrix<T> operator%(Matrix<T> x, T y) { return x %= y; } // TODO
+
+template<typename T>
 ostream& operator<<(ostream& os, const Matrix<T>& x) {
     FOR(i, 0, x._rows) {
         FOR(j, 0, x._cols) {
@@ -157,16 +164,16 @@ ostream& operator<<(ostream& os, const Matrix<T>& x) {
 
 template<typename T>
 Matrix<T> operator*(const Matrix<T>& x, const Matrix<T>& y) {
-    return _mul(x, y);
+    return mul(x, y);
 }
 
 template<typename T>
 Matrix<T> operator^(const Matrix<T>& x, const Matrix<T>& y) {
-    return _pow(x, y);
+    return pow(x, y);
 }
 
 template<typename T>
-Matrix<T> _mul(const Matrix<T>& x, const Matrix<T>& y, T mod=T()) {
+Matrix<T> mul(const Matrix<T>& x, const Matrix<T>& y, T mod=T()) {
     if (x._cols != y._rows)
         throw invalid_argument(
             "matrix size not suitable for multiplying\n"
@@ -184,42 +191,18 @@ Matrix<T> _mul(const Matrix<T>& x, const Matrix<T>& y, T mod=T()) {
 
 // quick exponentation
 template<typename T>
-Matrix<T> _pow(Matrix<T> x, T e, T mod=T()) {
-    Matrix<T> y = Matrix<T>::identity_matrix(x._rows);
+Matrix<T> pow(const Matrix<T>& x, T e, T mod=T()) {
+    if (x._rows != x._cols)
+        throw invalid_argument("matrix should be square");
+    Matrix<T> y = x;
+    Matrix<T> z = Matrix<T>::identity_matrix(x._rows);
     while (e > 0) {
-        if (e % 2 == 1) {
-            y = mul(y, x);
-            if (mod != T()) y %= mod;
-        }
-        x *= x;
-        if (mod != T()) x %= mod;
+        if (e % 2 == 1)
+            z = mul(y, z, mod);
+        y = mul(y, y, mod);
         e /= 2;
     }
-    return y;
-}
-
-
-template<typename T>
-class IntMatrix : public Matrix<T> {
-public:
-    IntMatrix(size_t rows=0, size_t cols=0):
-        Matrix<T>(rows, cols) {}
-    IntMatrix& operator%=(T t) {
-        FOR(i, 0, this->_rows)
-            FOR(j, 0, this->_cols)
-                this->_arr[i][j] %= t;
-        return *this;
-    }
-};
-
-template<typename T>
-IntMatrix<T> mul(const IntMatrix<T>& x, const IntMatrix<T>& y, T mod) {
-    return _mul(x, y, mod);
-}
-
-template<typename T>
-IntMatrix<T> pow(const IntMatrix<T>& x, const IntMatrix<T>& y, T mod) {
-    return _pow(x, y, mod);
+    return z;
 }
 
 #undef FOR
