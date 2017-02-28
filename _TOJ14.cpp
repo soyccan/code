@@ -1,5 +1,5 @@
 #include <bits/stdc++.h>
-#define int long long
+// #define int long long
 #define double long double
 #define MS(s,v) memset(s,v,sizeof(s))
 #define FOR(i,end) for (int i=0; i<end; ++i)
@@ -54,7 +54,7 @@ vector<complex<double>> bignum(const string& x,int n) {
     }
     return FFT::fast_fourier_transform(v);
 }
-string mul(string& a,string& b) {
+vector<int> mul(vector<int>& a,vector<int>& b) {
     int n=1<<17;
     vector<complex<double>> x=bignum(a,n);
     vector<complex<double>> y=bignum(b,n);
@@ -67,10 +67,27 @@ string mul(string& a,string& b) {
         ans[i]%=10;
     }
     while (ans.size()>1 && !ans.back()) ans.pop_back();
+    return ans;
+}
+vector<int> qpow(vector<int>& x,int y) {
+    // vector<int>
+}
+string tostring(vector<int>& x) {
     string s;
-    FOR(i,ans.size()) s.push_back('0'+ans[i]);
+    FOR(i,x.size()) s.push_back('0'+x[i]);
     reverse(s.begin(), s.end());
     return s;
+}
+istream& operator>>(istream& is,vector<int>& x) {
+    string s;
+    is>>s;
+    for (int i=s.size()-1; i>=0; i--) x.push_back(s[i]);
+    return is;
+}
+ostream& operator<<(ostream& os,vector<int>& x) {
+    for (int i=x.size()-1; i>=0; i--) os<<x[i];
+    cout<<'\n';
+    return os;
 }
 main() {
 #ifdef soytw
@@ -82,10 +99,9 @@ main() {
     string a,b,c;
     while (cin>>c>>a>>b) {
         if (c=="mul") {
-            cout<<a<<' '<<b<<' '<<mul(a,b)<<' '<<stoll(a)*stoll(b)<<endl;
-            assert(to_string(stoll(a)*stoll(b)) == mul(a,b));
+            cout<<mul(a,b)<<'\n';
         } else {
-            // cout<<qpow(a,b)<<'\n';
+            cout<<qpow(a,b)<<'\n';
         }
     }
 #ifdef soytw
