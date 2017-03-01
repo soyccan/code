@@ -32,9 +32,20 @@ using std::ceil;
 
 class BigNum {
 public:
-    BigNum(size_t size=0) {
-        _arr.resize(size);
+    BigNum() {
         _sign = false;
+    }
+    ~BigNum() {
+        _arr.clear();
+    }
+    BigNum(const BigNum& x) {
+        *this = x;
+    }
+    BigNum(const string& x) {
+        *this = x;
+    }
+    BigNum(int64_t x) {
+        *this = x;
     }
     BigNum& operator=(const BigNum& x) {
         _arr = x._arr;
