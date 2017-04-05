@@ -44,18 +44,23 @@ public:
     // }
     int decode_deflate(istream& input, ostream& output, size_t input_size) {
         DEBUGMSG("[decode_deflate] begin: %llu size: %llu\n", (size_t)input.tellg(), input_size);
+
+        size_t buf_size = min(input_size, MAX_BUFFER_SIZE);
+        input.read(buf, buf_size);
+
+        int cByte = 0;
+        int cBit = 0;
         char header;
         do {
-            input.read(buf, 1);
-            header = *buf;
+            header = nextbit(input, buf, cByte, cBit);
             DEBUGMSG("header: %hx\n", header);
             if (getbit(header, 1, 2) == 0) {
                 // stored
-                // [TODO]
                 input.read(buf, 4);
                 uint16_t block_size = read16(buf);
                 DEBUGMSG("stored block_size: %hx\n", block_size);
                 dump_stored(input, output, block_size);
+
             } else if (getbit(header, 1, 2) == 1) {
                 // fixed huffman code
                 DEBUGMSG("fixed huffman\n");
@@ -69,16 +74,49 @@ public:
                 // }
                 // DEBUGMSG("\n");
 
-                unsigned symbol = decode_symbol(buf);
+                unsigned bits = 0;
+                unsigned symbol = 0xfffffff;
+                for (int bits_count=1; bits_count<=9; bits_count++) {
+                    bits = (bits << 1) | nextbit(input, buf, cByte, cBit);
+                    if (bits_count == 8 && 48 <= bits && bits <= 191) {
+                        symbol = bits - 48;
+                        break;
+                    } else if (bits_count == 9 && 400 <= bits && bits <= 511) {
+                        symbol = bits - 256;
+                        break;
+                    } else if (bits_count == 7 && 0 <= bits && bits <= 23) {
+                        symbol = bits + 256;
+                        break;
+                    } else if (bits_count == 8 && 192 <= bits && bits <= 199) {
+                        symbol = bits + 88;
+                        break;
+                    }
+                }
+                DEBUGMSG("symbol: %u\n", symbol);
+
             } else if (getbit(header, 1, 2) == 2) {
                 // dynamic huffman code
                 DEBUGMSG("dynamic huffman\n");
+
             } else {
                 DEBUGMSG("file content error!\n");
                 return FILE_CONTENT_ERROR;
             }
         } while (!getbit(header, 0, 0));
         return SUCCESS;
+    }
+    int nextbit(istream& input, char* buf, int& cByte, int& cBit) {
+
+        ++cBit;
+        if (cBit > 7) {
+            ++cByte;
+            cBit = 0;
+        }
+        if (cByte > buf_size) {
+            input.read(buf, buf_size);
+            cByte = 0;
+        }
+        return 
     }
     int dump_stored(istream& input, ostream& output, size_t input_size) {
         copy_n(istream_iterator<char>(input),
@@ -280,7 +318,7 @@ private:
 
 char str[10000];
 int main() {
-    fstream infile("z.zip", ios::in | ios::binary);
+    fstream infile("a.zip", ios::in | ios::binary);
     // file size: 470241
     if (infile.is_open()) {
         MyZipEncoder z;
