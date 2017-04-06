@@ -10,6 +10,44 @@ using namespace std;
 #define FILE_UNEXPECTED_CLOSE 70
 #define SUCCESS 0
 
+class BitsReader {
+public:
+    BitsReader(istream* input, char* buf, size_t buf_size) {
+        this->input = input;
+        this->buf = buf;
+        this->buf_size = buf_size;
+        this->cBit = this->cByte = 0;
+
+        this->input->read(this->buf, buf_size);
+    }
+    unsigned readbits(size_t count) {
+        // beware of overflow
+        unsigned bits = 0;
+        for (unsigned i=0; i<count; i++)
+            bits |= nextbit() << i;
+        return bits;
+    }
+
+private:
+    istream* input;
+    char* buf;
+    size_t buf_size, cByte, cBit;
+
+    unsigned nextbit() {
+        unsigned res = (buf[cByte] >> cBit) & 1;
+        ++cBit;
+        if (cBit > 7) {
+            ++cByte;
+            cBit = 0;
+        }
+        if (cByte > buf_size) {
+            input->read(buf, buf_size);
+            cByte = 0;
+        }
+        return res;
+    }
+};
+
 class MyZipEncoder {
 public:
     static constexpr size_t MAX_BUFFER_SIZE = 1048576; // 1M
@@ -42,30 +80,30 @@ public:
     //             search = cur - block_size;
     //     }
     // }
-    int decode_deflate(istream& input, ostream& output, size_t input_size) {
-        DEBUGMSG("[decode_deflate] begin: %llu size: %llu\n", (size_t)input.tellg(), input_size);
+    int decode_deflate(size_t size) {
+        DEBUGMSG("[decode_deflate] begin: %llu size: %llu\n", (size_t)input->tellg(), size);
 
-        size_t buf_size = min(input_size, MAX_BUFFER_SIZE);
-        input.read(buf, buf_size);
-
-        int cByte = 0;
-        int cBit = 0;
-        char header;
+        size_t buf_size = MAX_BUFFER_SIZE;
+        if (buf_size > size)
+            buf_size = size;
+        BitsReader reader(input, buf, buf_size);
+        char bFinal, bType;
         do {
-            header = nextbit(input, buf, cByte, cBit);
-            DEBUGMSG("header: %hx\n", header);
-            if (getbit(header, 1, 2) == 0) {
+            bFinal = reader.readbits(1);
+            bType = reader.readbits(2);
+            DEBUGMSG("header: %hx %hx\n", bFinal, bType);
+            if (bType == 0) {
                 // stored
-                input.read(buf, 4);
-                uint16_t block_size = read16(buf);
+                reader.readbits(5); // ignore
+                uint16_t block_size = reader.readbits(16);
                 DEBUGMSG("stored block_size: %hx\n", block_size);
-                dump_stored(input, output, block_size);
+                dump_stored(block_size);
 
-            } else if (getbit(header, 1, 2) == 1) {
+            } else if (bType == 1) {
                 // fixed huffman code
                 DEBUGMSG("fixed huffman\n");
                 // char c;
-                // while (input.get(c) && !(c & 1)) {
+                // while (input->get(c) && !(c & 1)) {
                 //     while (c) {
                 //         DEBUGMSG("%d", c&1);
                 //         c >>= 1;
@@ -77,14 +115,14 @@ public:
                 unsigned bits = 0;
                 unsigned symbol = 0xfffffff;
                 for (int bits_count=1; bits_count<=9; bits_count++) {
-                    bits = (bits << 1) | nextbit(input, buf, cByte, cBit);
+                    bits = (bits << 1) | reader.readbits(1);
                     if (bits_count == 8 && 48 <= bits && bits <= 191) {
                         symbol = bits - 48;
                         break;
                     } else if (bits_count == 9 && 400 <= bits && bits <= 511) {
                         symbol = bits - 256;
                         break;
-                    } else if (bits_count == 7 && 0 <= bits && bits <= 23) {
+                    } else if (bits_count == 7 && bits <= 23) {
                         symbol = bits + 256;
                         break;
                     } else if (bits_count == 8 && 192 <= bits && bits <= 199) {
@@ -94,7 +132,7 @@ public:
                 }
                 DEBUGMSG("symbol: %u\n", symbol);
 
-            } else if (getbit(header, 1, 2) == 2) {
+            } else if (bType == 2) {
                 // dynamic huffman code
                 DEBUGMSG("dynamic huffman\n");
 
@@ -102,43 +140,34 @@ public:
                 DEBUGMSG("file content error!\n");
                 return FILE_CONTENT_ERROR;
             }
-        } while (!getbit(header, 0, 0));
+        } while (!bFinal);
         return SUCCESS;
     }
-    int nextbit(istream& input, char* buf, int& cByte, int& cBit) {
-
-        ++cBit;
-        if (cBit > 7) {
-            ++cByte;
-            cBit = 0;
-        }
-        if (cByte > buf_size) {
-            input.read(buf, buf_size);
-            cByte = 0;
-        }
-        return 
-    }
-    int dump_stored(istream& input, ostream& output, size_t input_size) {
-        copy_n(istream_iterator<char>(input),
-               input_size,
+    int dump_stored(size_t size) {
+        copy_n(istream_iterator<char>(*input),
+               size,
                ostream_iterator<char>(output));
 
-        DEBUGMSG("tellg: %d\n", (int)input.tellg());
+        DEBUGMSG("tellg: %d\n", (int)input->tellg());
         DEBUGMSG("stored data: \n");
         cout<<output.rdbuf();
 
         return SUCCESS;
     }
-    int init(istream& input) {
-        while (input.good()) {
-            input.read(buf, 4);
+    int init(istream* input) {
+        this->input = input;
+        while (input->good()) {
+            input->read(buf, 4);
             uint32_t signature = read32(buf);
             if (signature == 0x04034b50) {
                 // local file header
+                // these information is not read into memory
+                // but central directory header instead
                 DEBUGMSG("local file header\n");
 
                 FileInfo info;
-                input.read(buf, 26);
+                input->read(buf, 26);
+
                 info.required_version = read16(buf);
                 info.purpose = read16(buf+2);
                 info.method = read16(buf+4);
@@ -150,29 +179,15 @@ public:
                 uint16_t filename_len = read16(buf+22);
                 uint16_t extrafield_len = read16(buf+24);
 
-                input.read(info.filename, filename_len);
+                input->read(info.filename, filename_len);
                 info.filename[filename_len] = '\0';
-                input.read(info.extrafield, extrafield_len);
+                input->read(info.extrafield, extrafield_len);
                 info.extrafield[extrafield_len] = '\0';
 
-                if (getbit(info.purpose, 0, 0)) {
-                    // [TODO] encrypted
-                }
-
-                if (getbit(info.purpose, 1, 2) == 0) {
-                    // normal compression
-                } else if (getbit(info.purpose, 1, 2) == 1) {
-                    // maximum compression
-                } else if (getbit(info.purpose, 1, 2) == 2) {
-                    // fast compression
-                } else {
-                    // super fast compression
-                }
-
-                if (getbit(info.purpose, 3, 3)) {
+                if ((info.purpose >> 3) & 1) {
                     // data descriptor
                     DEBUGMSG("data descriptor\n");
-                    input.read(buf, 12);
+                    input->read(buf, 12);
                     info.crc32 = read32(buf);
                     info.compressed_size = read32(buf+4);
                     info.uncompressed_size = read32(buf+8);
@@ -180,9 +195,9 @@ public:
 
                 // file data
                 if (info.method == 0) {
-                    dump_stored(input, outbuf, info.compressed_size);
+                    dump_stored(info.compressed_size);
                 } else if (info.method == 8) {
-                    decode_deflate(input, outbuf, info.compressed_size);
+                    decode_deflate(info.compressed_size);
                 } else {
                     DEBUGMSG("unsupported compression method\n");
                     return FILE_FORMAT_ERROR;
@@ -192,9 +207,8 @@ public:
                 // central directory header
                 DEBUGMSG("central directory header\n");
 
-                zipfile.files_info.emplace_back();
-                FileInfo& info = zipfile.files_info.back();
-                input.read(buf, 42);
+                FileInfo info;
+                input->read(buf, 42);
 
                 info.made_version = read16(buf);
                 info.required_version = read16(buf+2);
@@ -213,28 +227,30 @@ public:
                 info.exter_attr = read32(buf+34);
                 info.offset = read32(buf+38);
 
-                input.read(info.filename, filename_len);
+                input->read(info.filename, filename_len);
                 info.filename[filename_len] = '\0';
-                input.read(info.extrafield, extrafield_len);
+                input->read(info.extrafield, extrafield_len);
                 info.extrafield[extrafield_len] = '\0';
-                input.read(info.comment, comment_len);
+                input->read(info.comment, comment_len);
                 info.comment[comment_len] = '\0';
+
+                files_info.push_back(info);
 
             } else if (signature == 0x06054b50) {
                 // end of central directory record
                 DEBUGMSG("end of central directory record\n\n");
 
-                input.read(buf, 18);
-                zipfile.this_disk = read16(buf);
-                zipfile.start_disk = read16(buf+2);
-                zipfile.count_entry_total = read16(buf+4);
-                zipfile.count_entry_here = read16(buf+6);
-                zipfile.dir_size = read32(buf+8);
-                zipfile.dir_offset = read32(buf+12);
+                input->read(buf, 18);
+                zip_info.this_disk = read16(buf);
+                zip_info.start_disk = read16(buf+2);
+                zip_info.count_entry_total = read16(buf+4);
+                zip_info.count_entry_here = read16(buf+6);
+                zip_info.dir_size = read32(buf+8);
+                zip_info.dir_offset = read32(buf+12);
                 uint16_t comment_len = read16(buf+16);
 
-                input.read(zipfile.comment, comment_len);
-                zipfile.comment[comment_len] = '\0';
+                input->read(zip_info.comment, comment_len);
+                zip_info.comment[comment_len] = '\0';
 
                 break;
             } else {
@@ -242,11 +258,11 @@ public:
                 return FILE_CONTENT_ERROR;
             }
         }
-        return (input.eof() ? SUCCESS : FILE_UNEXPECTED_CLOSE);
+        return (input->eof() ? SUCCESS : FILE_UNEXPECTED_CLOSE);
     }
     void list_files() {
         DEBUGMSG("files in zip:\n");
-        for (FileInfo info : zipfile.files_info) {
+        for (FileInfo info : files_info) {
             tm moddt = dosdatetime(info.moddate, info.modtime);
             DEBUGMSG("file: %s\n", info.filename);
             DEBUGMSG("made_version: %hu\n", info.made_version);
@@ -278,27 +294,29 @@ private:
                  inter_attr, start_disk;
         uint32_t crc32, compressed_size, uncompressed_size, exter_attr, offset;
     };
-    struct ZipFile {
+    struct ZipInfo {
         char comment[MAX_FIELD_LEN];
         uint16_t this_disk, start_disk,
                  count_entry_total, count_entry_here;
         uint32_t dir_size, dir_offset;
-        vector<FileInfo> files_info;
     };
 
-    ZipFile zipfile;
-    stringstream outbuf;
+    vector<FileInfo> files_info;
+    ZipInfo zip_info;
+
+    istream* input;
+    stringstream output;
     char buf[MAX_BUFFER_SIZE];
-    // TODO: prevent buf overflow
+    // TODO: prevent buffer overflow
 
     inline struct tm dosdatetime(uint16_t date, uint16_t time) {
         struct tm datetime;
         datetime.tm_mday = date & 0x1f;
-        datetime.tm_mon = ((date & 0x1e0) >> 5) - 1;
-        datetime.tm_year = ((date & 0xfe00) >> 9) + 80;
+        datetime.tm_mon = ((date >> 5) & 0xf) - 1;
+        datetime.tm_year = ((date >> 9) & 0x7f) + 80;
         datetime.tm_sec = time & 0x1f;
-        datetime.tm_min = (time & 0x7e0) >> 5;
-        datetime.tm_hour = (time & 0xf800) >> 11;
+        datetime.tm_min = (time >> 5) & 0x3f;
+        datetime.tm_hour = (time >> 11) & 0x1f;
         return datetime;
     }
     inline uint16_t read16(void* ptr) {
@@ -307,22 +325,15 @@ private:
     inline uint32_t read32(void* ptr) {
         return *(uint32_t*)ptr;
     }
-    inline uint32_t getbit(uint32_t x, int lower, int upper) {
-        uint32_t mask = 0;
-        for (int i=lower; i<=upper; i++)
-            mask = (mask << 1) | 1;
-        mask <<= lower;
-        return (x & mask) >> lower;
-    }
 };
 
 char str[10000];
 int main() {
-    fstream infile("a.zip", ios::in | ios::binary);
+    fstream infile("z.zip", ios::in | ios::binary);
     // file size: 470241
     if (infile.is_open()) {
         MyZipEncoder z;
-        cout<<"init: "<<z.init(infile)<<endl;
+        cout<<"init: "<<z.init(&infile)<<endl;
         z.list_files();
         infile.close();
     }
