@@ -29,6 +29,38 @@ namespace Geometry {
       y = _x * sin(ang) + _y * cos(ang);
       return *this;
     }
+
+    friend _Vector2D<T>
+    operator+(_Vector2D<T> u, const _Vector2D<T>& v) { u+=v; return u; }
+
+    friend _Vector2D<T>
+    operator-(_Vector2D<T> u, const _Vector2D<T>& v) { u-=v; return u; }
+
+    friend _Vector2D<T>
+    operator*(_Vector2D<T> v, T t) { v*=t; return v; }
+
+    friend _Vector2D<T>
+    operator*(T t, _Vector2D<T> v) { v*=t; return v; }
+
+    friend _Vector2D<T>
+    operator/(_Vector2D<T> v, T t) { v/=t; return v; }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, const _Vector2D<T>& v) {
+      os << '(' << v.x << ',' << v.y << ')';
+      return os;
+    }
+
+    friend inline bool
+    operator==(const _Vector2D<T>& u, const _Vector2D<T>& v) {
+      return sgn(u.x-v.x) == 0
+          && sgn(u.y-v.y) == 0;
+    }
+
+    friend inline bool
+    operator!=(const _Vector2D<T>& u, const _Vector2D<T>& v) {
+      return !(u == v);
+    }
   };
 
   template<typename T = long double>
@@ -90,6 +122,78 @@ namespace Geometry {
     }
   };
 
+  template<typename T = long double>
+  class _Vector3D {
+  public:
+    T x, y, z;
+    _Vector3D(T x=0, T y=0, T z=0): x(x), y(y), z(z) {}
+
+    _Vector3D& operator+() { return *this; }
+    _Vector3D operator-() { return _Vector3D(-x, -y, -z); }
+
+    _Vector3D& operator=(const _Vector3D& v) {
+      x = v.x; y = v.y; z = v.z;
+      return *this;
+    }
+
+    _Vector3D& operator+=(const _Vector3D& v) {
+      x += v.x; y += v.y; z += v.z;
+      return *this;
+    }
+
+    _Vector3D& operator-=(const _Vector3D& v) {
+      x -= v.x; y -= v.y; z -= v.z;
+      return *this;
+    }
+
+    _Vector3D& operator*=(T t) {
+      x *= t; y *= t; z *= t;
+      return *this;
+    }
+
+    _Vector3D& operator/=(T t) {
+      x /= t; y /= t; z /= t;
+      return *this;
+    }
+
+    // _Vector3D& rotate(T ang) {
+    // [TODO]
+    // }
+
+    friend _Vector3D
+    operator+(_Vector3D u, const _Vector3D& v) { u+=v; return u; }
+
+    friend _Vector3D
+    operator-(_Vector3D u, const _Vector3D& v) { u-=v; return u; }
+
+    friend _Vector3D
+    operator*(_Vector3D v, T t) { v*=t; return v; }
+
+    friend _Vector3D
+    operator*(T t, _Vector3D v) { v*=t; return v; }
+
+    friend _Vector3D
+    operator/(_Vector3D v, T t) { v/=t; return v; }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, const _Vector3D& v) {
+      os << '(' << v.x << ',' << v.y << ',' << v.z << ')';
+      return os;
+    }
+
+    friend inline bool
+    operator==(const _Vector3D& u, const _Vector3D& v) {
+      return sgn(u.x - v.x) == 0
+          && sgn(u.y - v.y) == 0
+          && sgn(u.z - v.z) == 0;
+    }
+
+    friend inline bool
+    operator!=(const _Vector3D& u, const _Vector3D& v) {
+      return !(u == v);
+    }
+  };
+
 // public members
   const long double EPS = 1e-10;
   const long double INF = std::numeric_limits<long double>::infinity();
@@ -104,7 +208,7 @@ namespace Geometry {
 
 // functions
   template<typename T>
-  int sgn(T x) {
+  inline int sgn(T x) {
     if (x > EPS)
       return 1;
     else if (x < -EPS)
@@ -114,48 +218,6 @@ namespace Geometry {
   }
 
   // _Vector2D
-    template<typename T>
-    _Vector2D<T>
-    operator+(_Vector2D<T> u, const _Vector2D<T>& v) { u+=v; return u; }
-
-    template<typename T>
-    _Vector2D<T>
-    operator-(_Vector2D<T> u, const _Vector2D<T>& v) { u-=v; return u; }
-
-    template<typename T>
-    _Vector2D<T>
-    operator*(_Vector2D<T> v, T t) { v*=t; return v; }
-
-    template<typename T>
-    _Vector2D<T>
-    operator*(T t, _Vector2D<T> v) { v*=t; return v; }
-
-    template<typename T>
-    _Vector2D<T>
-    operator/(_Vector2D<T> v, T t) { v/=t; return v; }
-
-    template<typename T>
-    std::ostream&
-    operator<<(std::ostream& os,
-               const _Vector2D<T>& v) {
-      os << '(' << v.x << ',' << v.y << ')';
-      return os;
-    }
-
-    template<typename T>
-    inline bool
-    operator==(const _Vector2D<T>& u, const _Vector2D<T>& v) {
-      return sgn(u.x-v.x) == 0
-          && sgn(u.y-v.y) == 0;
-    }
-
-    template<typename T>
-    inline bool
-    operator!=(const _Vector2D<T>& u, const _Vector2D<T>& v) {
-      return !(u == v);
-    }
-
-
     template<typename T>
     T abs(const _Vector2D<T>& v) {
       return std::sqrt(v.x*v.x + v.y*v.y);
@@ -306,6 +368,32 @@ namespace Geometry {
     // template<typename T>
     // _Polygon2D<T> scale(_Polygon2D<T> pg, const _Point2D<T>& origin, T t) {}
   // end _Polygon2D
+
+  // _Vector3D
+    template<typename T>
+    T abs(const _Vector3D<T>& v) {
+      return std::sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+    }
+
+    template<typename T>
+    T dot(const _Vector3D<T>& u, const _Vector3D<T>& v) {
+      return u.x*v.x + u.y*v.y + u.z*v.z;
+    }
+
+    template<typename T>
+    _Vector3D<T> cross(const _Vector3D<T>& u, const _Vector3D<T>& v) {
+      return _Vector3D<T>(u.y * v.z - v.y * u.z,
+                         u.z * v.x - v.z * u.x,
+                         u.x * v.y - v.x * u.y);
+    }
+
+    template<typename T>
+    _Vector3D<T> project(const _Vector3D<T>& u, _Vector3D<T> v) {
+      // u onto v
+      v *= dot(u, v) / (v.x*v.x + v.y*v.y + v.z*v.z);
+      return v;
+    }
+  // end _Vector3D
 };
 
 #endif // GEOMETRY_H
