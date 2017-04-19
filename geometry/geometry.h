@@ -4,209 +4,136 @@
 #include <limits>
 #include <istream>
 #include <ostream>
+#include <vector>
+#include <exception>
 
 namespace Geometry {
-// private members
   template<typename T = long double>
-  class _Vector2D {
-  public:
-    T x, y;
-    _Vector2D(T x=0, T y=0): x(x), y(y) {}
-
-    _Vector2D& operator+() { return *this; }
-    _Vector2D operator-() { return _Vector2D(-x, -y); }
-
-    _Vector2D& operator=(const _Vector2D& v) { x=v.x; y=v.y; return *this; }
-    _Vector2D& operator+=(const _Vector2D& v) { x+=v.x; y+=v.y; return *this; }
-    _Vector2D& operator-=(const _Vector2D& v) { x-=v.x; y-=v.y; return *this; }
-    _Vector2D& operator*=(T t) { x*=t; y*=t; return *this; }
-    _Vector2D& operator/=(T t) { x/=t; y/=t; return *this; }
-
-    _Vector2D<T>& rotate(T ang) {
-      T _x = x;
-      T _y = y;
-      x = _x * cos(ang) - _y * sin(ang);
-      y = _x * sin(ang) + _y * cos(ang);
-      return *this;
-    }
-
-    friend _Vector2D<T>
-    operator+(_Vector2D<T> u, const _Vector2D<T>& v) { u+=v; return u; }
-
-    friend _Vector2D<T>
-    operator-(_Vector2D<T> u, const _Vector2D<T>& v) { u-=v; return u; }
-
-    friend _Vector2D<T>
-    operator*(_Vector2D<T> v, T t) { v*=t; return v; }
-
-    friend _Vector2D<T>
-    operator*(T t, _Vector2D<T> v) { v*=t; return v; }
-
-    friend _Vector2D<T>
-    operator/(_Vector2D<T> v, T t) { v/=t; return v; }
-
-    friend std::ostream&
-    operator<<(std::ostream& os, const _Vector2D<T>& v) {
-      os << '(' << v.x << ',' << v.y << ')';
-      return os;
-    }
-
-    friend inline bool
-    operator==(const _Vector2D<T>& u, const _Vector2D<T>& v) {
-      return sgn(u.x-v.x) == 0
-          && sgn(u.y-v.y) == 0;
-    }
-
-    friend inline bool
-    operator!=(const _Vector2D<T>& u, const _Vector2D<T>& v) {
-      return !(u == v);
-    }
-  };
-
-  template<typename T = long double>
-  class _Point2D : public _Vector2D<T> {
-  public:
-    _Point2D(T x=0, T y=0): _Vector2D<T>(x, y) {}
-  };
-
-  template<typename T = long double>
-  class _Line2D {
-  private:
-    _Point2D<T> base;
-    // direction vector
-    // TODO: unit vector ?
-    _Vector2D<T> dir;
-  public:
-    // default: horizontal line passing through origin
-    _Line2D(const _Point2D<T>& base = _Point2D<T>(0, 0),
-            const _Vector2D<T>& dir = _Vector2D<T>(1, 0)): base(base), dir(dir) {}
-
-    // define by two points
-    _Line2D(const _Point2D<T>& base,
-            const _Point2D<T>& end): base(base), dir(end-base) {}
-
-    template<typename T_>
-    friend size_t count_inter(const _Line2D<T_>&, const _Line2D<T_>&);
-
-    template<typename T_>
-    friend _Point2D<T_> get_inter(_Line2D<T_>, const _Line2D<T_>&);
-  };
-
-  template<typename T = long double>
-  class _Segment2D {
-  public:
-    _Point2D<T> base, end;
-    _Segment2D(const _Point2D<T>& base = _Point2D<T>(0, 0),
-               const _Point2D<T>& end = _Point2D<T>()): base(base), end(end) {}
-  };
-
-  template<typename T = long double>
-  class _Polygon2D {
-  private:
-    _Point2D<T>* __points;
-    size_t __size;
-  public:
-    _Polygon2D(size_t size=0) {
-      __points = new _Point2D<T>[size];
-      __size = size;
-    }
-
-    _Point2D<T>& operator[](size_t i) { return __points[i]; }
-    size_t size() const { return __size; }
-
-    T area() const {
-      T res = 0;
-      for (size_t i=0; i<__size; i++)
-        res += cross(__points[i], __points[(i+1)%__size]);
-      return res/2;
-    }
-  };
-
-  template<typename T = long double>
-  class _Vector3D {
+  class _VectorBase {
   public:
     T x, y, z;
-    _Vector3D(T x=0, T y=0, T z=0): x(x), y(y), z(z) {}
+    _VectorBase(T x=0, T y=0, T z=0): x(x), y(y), z(z) {}
 
-    _Vector3D& operator+() { return *this; }
-    _Vector3D operator-() { return _Vector3D(-x, -y, -z); }
+    _VectorBase& operator+() { return *this; }
+    _VectorBase operator-() { return _VectorBase(-x, -y, -z); }
 
-    _Vector3D& operator=(const _Vector3D& v) {
+    _VectorBase& operator=(const _VectorBase& v) {
       x = v.x; y = v.y; z = v.z;
       return *this;
     }
 
-    _Vector3D& operator+=(const _Vector3D& v) {
+    _VectorBase& operator+=(const _VectorBase& v) {
       x += v.x; y += v.y; z += v.z;
       return *this;
     }
 
-    _Vector3D& operator-=(const _Vector3D& v) {
+    _VectorBase& operator-=(const _VectorBase& v) {
       x -= v.x; y -= v.y; z -= v.z;
       return *this;
     }
 
-    _Vector3D& operator*=(T t) {
+    _VectorBase& operator*=(T t) {
       x *= t; y *= t; z *= t;
       return *this;
     }
 
-    _Vector3D& operator/=(T t) {
+    _VectorBase& operator/=(T t) {
       x /= t; y /= t; z /= t;
       return *this;
     }
 
-    // _Vector3D& rotate(T ang) {
-    // [TODO]
-    // }
+    friend _VectorBase
+    operator+(_VectorBase u, const _VectorBase& v) { u += v; return u; }
 
-    friend _Vector3D
-    operator+(_Vector3D u, const _Vector3D& v) { u+=v; return u; }
+    friend _VectorBase
+    operator-(_VectorBase u, const _VectorBase& v) { u -= v; return u; }
 
-    friend _Vector3D
-    operator-(_Vector3D u, const _Vector3D& v) { u-=v; return u; }
+    friend _VectorBase
+    operator*(_VectorBase v, T t) { v *= t; return v; }
 
-    friend _Vector3D
-    operator*(_Vector3D v, T t) { v*=t; return v; }
+    friend _VectorBase
+    operator*(T t, _VectorBase v) { v *= t; return v; }
 
-    friend _Vector3D
-    operator*(T t, _Vector3D v) { v*=t; return v; }
-
-    friend _Vector3D
-    operator/(_Vector3D v, T t) { v/=t; return v; }
+    friend _VectorBase
+    operator/(_VectorBase v, T t) { v /= t; return v; }
 
     friend std::ostream&
-    operator<<(std::ostream& os, const _Vector3D& v) {
+    operator<<(std::ostream& os, const _VectorBase& v) {
       os << '(' << v.x << ',' << v.y << ',' << v.z << ')';
       return os;
     }
 
     friend inline bool
-    operator==(const _Vector3D& u, const _Vector3D& v) {
+    operator==(const _VectorBase& u, const _VectorBase& v) {
       return sgn(u.x - v.x) == 0
           && sgn(u.y - v.y) == 0
           && sgn(u.z - v.z) == 0;
     }
 
     friend inline bool
-    operator!=(const _Vector3D& u, const _Vector3D& v) {
+    operator!=(const _VectorBase& u, const _VectorBase& v) {
       return !(u == v);
     }
   };
 
-// public members
+  template<typename T = long double>
+  class Vector3d : public _VectorBase<T> {
+  public:
+    Vector3d(T x=0, T y=0, T z=0): _VectorBase<T>(x, y, z) {}
+  };
+
+  template<typename T = long double>
+  class Point3d : public _VectorBase<T> {
+  public:
+    Point3d(T x=0, T y=0, T z=0): _VectorBase<T>(x, y, z) {}
+  };
+
+  template<typename T = long double>
+  class Line3d {
+  public:
+    Point3d<T> point;
+
+    // direction vector
+    // TODO: unit vector ?
+    Vector3d<T> dir;
+
+    Line3d() {}
+    Line3d(const Point3d<T>& point,
+           const Vector3d<T>& dir): point(point), dir(dir) {}
+  };
+
+  template<typename T = long double>
+  class Segment3d {
+  public:
+    Point3d<T> left, right;
+    Segment3d() {}
+    Segment3d(const Point3d<T>& left,
+              const Point3d<T>& right): left(left), right(right) {}
+  };
+
+  template<typename T = long double>
+  class Polygon3d {
+  public:
+    Polygon3d(size_t count = 0) {
+      __vertices.resize(count);
+    }
+    Point3d<T>& operator[](size_t i) {
+      return __vertices[i];
+    }
+    size_t count() const {
+      return __vertices.count();
+    }
+
+  private:
+    std::vector<Point3d<T>> __vertices;
+  };
+
+
+  enum LineRelation {INTERSECT, COINCIDENT, PARALLEL, SKEW};
+
   const long double EPS = 1e-10;
   const long double INF = std::numeric_limits<long double>::infinity();
-  const size_t UNCOUNTABLE = std::numeric_limits<size_t>::max();
-  const _Point2D<long double> NO_POINT(INF, INF);
 
-  typedef _Vector2D<long double> Vector;
-  typedef _Point2D<long double> Point;
-  typedef _Line2D<long double> Line;
-  typedef _Segment2D<long double> Segment;
-  typedef _Polygon2D<long double> Polygon;
-
-// functions
   template<typename T>
   inline int sgn(T x) {
     if (x > EPS)
@@ -217,142 +144,144 @@ namespace Geometry {
       return 0;
   }
 
-  // _Vector2D
+  // _VectorBase
     template<typename T>
-    T abs(const _Vector2D<T>& v) {
-      return std::sqrt(v.x*v.x + v.y*v.y);
+    T abs(const _VectorBase<T>& v) {
+      return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     }
 
     template<typename T>
-    T arg(const _Vector2D<T>& v) {
-      return std::atan2(v.y, v.x);
+    T dot(const _VectorBase<T>& u, const _VectorBase<T>& v) {
+      return u.x * v.x + u.y * v.y + u.z * v.z;
     }
 
     template<typename T>
-    T dot(const _Vector2D<T>& u, const _Vector2D<T>& v) {
-      return u.x*v.x + u.y*v.y;
+    _VectorBase<T> cross(const _VectorBase<T>& u, const _VectorBase<T>& v) {
+      return _VectorBase<T>(u.y * v.z - v.y * u.z,
+                            u.z * v.x - v.z * u.x,
+                            u.x * v.y - v.x * u.y);
     }
 
     template<typename T>
-    T cross(const _Vector2D<T>& u, const _Vector2D<T>& v) {
-      return u.x*v.y - u.y*v.x;
+    T det(const _VectorBase<T>& u, const _VectorBase<T>& v, const _VectorBase<T>& w) {
+      return u.x * v.y * w.z
+           + w.x * u.y * v.z
+           + v.x * w.y * u.z
+           - w.x * v.y * u.z
+           - u.x * w.y * v.z
+           - v.x * u.y * w.z;
     }
 
-    template<typename T>
-    _Vector2D<T> rotate(_Vector2D<T> v, T ang) {
-      v.rotate(ang);
-      return v;
-    }
+    // template<typename T>
+    // Vector2d<T> rotate(_VectorBase<T> v, T ang) {
+    //   T _x = v.x;
+    //   T _y = v.y;
+    //   v.x = _x * cos(ang) - _y * sin(ang);
+    //   v.y = _x * sin(ang) + _y * cos(ang);
+    //   return v;
+    // }
 
     template<typename T>
-    _Vector2D<T> project(const _Vector2D<T>& u, _Vector2D<T> v) {
+    _VectorBase<T> project(const _VectorBase<T>& u, const _VectorBase<T>& v) {
       // u onto v
-      v *= dot(u, v) / (v.x*v.x + v.y*v.y);
-      return v;
+      return v * (dot(u, v) / (v.x*v.x + v.y*v.y + v.z*v.z));
     }
-  // end _Vector2D
+  // end _VectorBase
 
-  // _Point2D
+  // Line3d
     template<typename T>
-    _Point2D<T> rotate(_Point2D<T> p, const _Point2D<T>& origin, T ang) {
-      p -= origin;
-      p.rotate(ang);
-      p += origin;
-      return p;
-    }
-  // end _Point2D
-
-  // _Line2D
-    template<typename T>
-    size_t count_inter(const _Line2D<T>& l, const _Line2D<T>& m) {
-      if (sgn(cross(l.dir, m.dir)) == 0) {
-        if (sgn(cross(l.dir, m.base-l.base)) == 0)
-          return UNCOUNTABLE; // coincidence
+    LineRelation relation(const Line3d<T>& l, const Line3d<T>& m) {
+      if (sgn(abs(cross(l.dir, m.dir))) == 0) {
+        if (sgn(abs(cross(l.dir, m.point - l.point))) == 0)
+          return COINCIDENT;
         else
-          return 0; // parallel
-      } else {
-        return 1;
+          return PARALLEL;
+      }
+      else {
+        if (sgn(det(l.dir, m.dir, m.point - l.point)) == 0)
+          return INTERSECT;
+        else
+          return SKEW;
       }
     }
 
     template<typename T>
-    _Point2D<T> get_inter(_Line2D<T> l, const _Line2D<T>& m) {
-      l.dir *= cross(m.base-l.base, m.dir) / cross(l.dir, m.dir);
-      l.base += l.dir;
-      if (count_inter(l, m) == 1)
-        return l.base;
-      else
-        return NO_POINT;
+    Point3d<T> get_inter(const Line3d<T>& l, const Line3d<T>& m) {
+      if (relation(l, m) != LineRelation::INTERSECT)
+        throw std::exception("Lines may not intersect at one point");
+      return l.point + l.dir * (cross(m.point - l.point, m.dir) / cross(l.dir, m.dir));
     }
-  // end _Line2D
+  // end Line3d
 
-  // _Segment2D
+  // Segment3d
+  // [TODO]
     // template<typename T>
-    // bool _point_on_collinear_seg(const _Point2D<T>& p, const _Segment2D<T>& s) {
+    // bool _point_on_collinear_seg(const Point3d<T>& p, const Segment3d<T>& s) {
     //   return sgn(p.x - s.base.x) * sgn(p.x - s.end.x) <= 0
     //       && sgn(p.y - s.base.y) * sgn(p.y - s.end.y) <= 0;
     // }
 
+    // template<typename T>
+    // bool point_on_seg(const Point3d<T>& p, const Segment3d<T>& s) {
+    //   return sgn(cross(s.base-p, s.end-p)) == 0
+    //       && sgn(dot(s.base-p, s.end-p)) <= 0;
+    // }
+
+    // template<typename T>
+    // bool _collinear_seg_inter(const Segment3d<T>& s, const Segment3d<T>& t) {
+    //   return point_on_seg(t.base, s)
+    //       || point_on_seg(t.end, s)
+    //       || point_on_seg(s.base, t)
+    //       || point_on_seg(s.end, t);
+    // }
+
+    // template<typename T>
+    // size_t count_inter(const Segment3d<T>& s, const Segment3d<T>& t) {
+    //   T c1 = cross(s.end-s.base, t.base-s.base);
+    //   T c2 = cross(s.end-s.base, t.end-s.base);
+    //   T c3 = cross(t.end-t.base, s.base-t.base);
+    //   T c4 = cross(t.end-t.base, s.end-t.base);
+    //   if ((sgn(c1) == 0 && sgn(c2) == 0 && _collinear_seg_inter(s, t))
+    //    || (sgn(c3) == 0 && sgn(c4) == 0 && _collinear_seg_inter(s, t)))
+    //     return COUNTLESS;
+    //   else if ((sgn(c1) * sgn(c2) < 0 && sgn(c3) * sgn(c4) < 0) // cross
+    //         || (sgn(c1) == 0 && point_on_seg(t.base, s))
+    //         || (sgn(c2) == 0 && point_on_seg(t.end, s))
+    //         || (sgn(c3) == 0 && point_on_seg(s.base, t))
+    //         || (sgn(c4) == 0 && point_on_seg(s.end, t)))
+    //     return 1;
+    //   else
+    //     return 0;
+    // }
+
+    // template<typename T>
+    // Point3d<T> get_inter(const Segment3d<T>& s, const Segment3d<T>& t) {
+    //   Line3d<T> l(s.base, s.end-s.base);
+    //   Line3d<T> m(t.base, t.end-t.base);
+    //   if (count_inter(s, t) == 1)
+    //     return get_inter(l, m);
+    //   else
+    //     return NO_POINT;
+    // }
+  // end Segment3d
+
+  // Polygon3d
     template<typename T>
-    bool point_on_seg(const _Point2D<T>& p, const _Segment2D<T>& s) {
-      return sgn(cross(s.base-p, s.end-p)) == 0
-          && sgn(dot(s.base-p, s.end-p)) <= 0;
+    T area(const Polygon3d<T> polygon) {
+      T res = 0;
+      for (size_t i = 0; i < polygon.count(); ++i)
+        res += cross(polygon[i], polygon[(i+1) % polygon.count()]);
+      return res / 2;
     }
 
     template<typename T>
-    bool _collinear_seg_inter(const _Segment2D<T>& s, const _Segment2D<T>& t) {
-      return point_on_seg(t.base, s)
-          || point_on_seg(t.end, s)
-          || point_on_seg(s.base, t)
-          || point_on_seg(s.end, t);
-    }
-
-    template<typename T>
-    size_t count_inter(const _Segment2D<T>& s, const _Segment2D<T>& t) {
-      T c1 = cross(s.end-s.base, t.base-s.base);
-      T c2 = cross(s.end-s.base, t.end-s.base);
-      T c3 = cross(t.end-t.base, s.base-t.base);
-      T c4 = cross(t.end-t.base, s.end-t.base);
-      if ((sgn(c1) == 0 && sgn(c2) == 0 && _collinear_seg_inter(s, t))
-       || (sgn(c3) == 0 && sgn(c4) == 0 && _collinear_seg_inter(s, t)))
-        return UNCOUNTABLE;
-      else if ((sgn(c1) * sgn(c2) < 0 && sgn(c3) * sgn(c4) < 0) // cross
-            || (sgn(c1) == 0 && point_on_seg(t.base, s))
-            || (sgn(c2) == 0 && point_on_seg(t.end, s))
-            || (sgn(c3) == 0 && point_on_seg(s.base, t))
-            || (sgn(c4) == 0 && point_on_seg(s.end, t)))
-        return 1;
-      else
-        return 0;
-    }
-
-    template<typename T>
-    _Point2D<T> get_inter(const _Segment2D<T>& s, const _Segment2D<T>& t) {
-      _Line2D<T> l(s.base, s.end-s.base);
-      _Line2D<T> m(t.base, t.end-t.base);
-      if (count_inter(s, t) == 1)
-        return get_inter(l, m);
-      else
-        return NO_POINT;
-    }
-  // end _Segment2D
-
-  // _Polygon2D
-    template<typename T>
-    _Polygon2D<T> rotate(_Polygon2D<T> pg, const _Point2D<T>& origin, T ang) {
-      for (size_t i=0; i<pg.size(); i++)
-        pg[i] = rotate(pg[i], origin, ang);
-      return pg;
-    }
-
-    template<typename T>
-    bool inside(const _Point2D<T>& p, const _Polygon2D<T>& pg) {
+    bool inside(const Point3d<T>& p, const Polygon3d<T>& pg) {
       size_t n = pg.size();
       int wn = 0;
       for (int i=0; i<n; i++) {
-        const _Point2D<T>& s1 = pg[i];
-        const _Point2D<T>& s2 = pg[(i+1)%n];
-        if (point_on_seg(p, _Segment2D<T>(s1, s2)))
+        const Point3d<T>& s1 = pg[i];
+        const Point3d<T>& s2 = pg[(i+1)%n];
+        if (point_on_seg(p, Segment3d<T>(s1, s2)))
           return -1; // on side
         int k = cross(s2-s1 , p-s1);
         int d1 = s1.y - p.y;
@@ -366,34 +295,8 @@ namespace Geometry {
     }
 
     // template<typename T>
-    // _Polygon2D<T> scale(_Polygon2D<T> pg, const _Point2D<T>& origin, T t) {}
-  // end _Polygon2D
-
-  // _Vector3D
-    template<typename T>
-    T abs(const _Vector3D<T>& v) {
-      return std::sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-    }
-
-    template<typename T>
-    T dot(const _Vector3D<T>& u, const _Vector3D<T>& v) {
-      return u.x*v.x + u.y*v.y + u.z*v.z;
-    }
-
-    template<typename T>
-    _Vector3D<T> cross(const _Vector3D<T>& u, const _Vector3D<T>& v) {
-      return _Vector3D<T>(u.y * v.z - v.y * u.z,
-                         u.z * v.x - v.z * u.x,
-                         u.x * v.y - v.x * u.y);
-    }
-
-    template<typename T>
-    _Vector3D<T> project(const _Vector3D<T>& u, _Vector3D<T> v) {
-      // u onto v
-      v *= dot(u, v) / (v.x*v.x + v.y*v.y + v.z*v.z);
-      return v;
-    }
-  // end _Vector3D
+    // Polygon3d<T> scale(Polygon3d<T> pg, const Point3d<T>& origin, T t) {}
+  // end Polygon3d
 };
 
 #endif // GEOMETRY_H
