@@ -1,4 +1,5 @@
-// PKZIP version 2.0
+// PKZIP version 2.0: https://pkware.cachefly.net/webdocs/APPNOTE/APPNOTE-2.0.txt
+// Deflate: https://tools.ietf.org/html/rfc1951
 #include <bits/stdc++.h>
 #define DEBUGMSG(format, ...) printf(format, ##__VA_ARGS__); fflush(stdout)
 using namespace std;
@@ -148,23 +149,34 @@ public:
         return SUCCESS;
     }
     ReturnState read_dynamic() {
+        unsigned hLit = readbits(5) + 257;
+        unsigned hDist = readbits(5) + 1;
+        unsigned hCLen = readbits(4) + 4;
+
+        unsigned alpha[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5,
+                              11, 4, 12, 3, 13, 2, 14, 1, 15};
+        Huffman alpha_tree[19];
+        unsigned alpha_codelen[19] = {};
+        for (int i = 0; i < hCLen; ++i)
+            alpha_codelen[alpha[i]] = readbits(3);
+        construct(tree, alpha_codelen);
     }
-    void construct(Huffman tree[]) {
+    void construct(Huffman tree[], int codelen[]) {
         unsigned len_count[MAX_CODE_LEN] = {};
         for (unsigned symbol = 0; symbol <= MAX_LIT_LEN_CODE; ++symbol)
-            ++len_count[tree[symbol].len];
+            ++len_count[codelen[symbol]];
 
-        unsigned code = 0;
-        unsigned next_code[MAX_CODE_LEN + 1];
-        for (unsigned codelen = 1; codelen <= MAX_CODE_LEN; ++codelen) {
-            code = (code + len_count[codelen-1]) << 1;
-            next_code[codelen] = code;
+        unsigned c = 0;
+        unsigned begin_code[MAX_CODE_LEN + 1];
+        for (unsigned len = 1; len <= MAX_CODE_LEN; ++len) {
+            c = (c + len_count[len-1]) << 1;
+            begin_code[len] = c;
         }
 
         for (unsigned symbol = 0; symbol <= MAX_LIT_LEN_CODE; ++symbol) {
-            unsigned codelen = tree[symbol].len;
-            if (codelen > 0)
-                tree[symbol].code = next_code[codelen]++;
+            unsigned c = begin_code[codelen[symbol]]++;
+            tree[c].len = codelen[symbol];
+            tree[c].symbol = symbol;
         }
     }
 
