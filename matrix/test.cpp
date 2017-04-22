@@ -1,26 +1,32 @@
 #include <bits/stdc++.h>
 #include "matrix.h"
 #define MS(s,v) memset(s,v,sizeof(s))
-#define FOR(i,end) for (int i=0; i<end; ++i)
-#define FOR1(i,end) for (int i=1; i<=end; ++i)
+#define FOR(i,start,end) for (int i=start; i<end; ++i)
 using namespace std;
+using namespace matrix;
+SquareMatrix<double> randmat() {
+	SquareMatrix<double> m(5);
+	FOR(i,0,5) FOR(j,0,5) m[i][j] = rand()%100-50;
+	return m;
+}
 main() {
-	// test: 2 -1 0 -1 2 -1 0 -1 2
-	// inverse: 0.75 0.5 0.25 0.5 1 0.5 0.25 0.5 0.75
-	SquareMatrix<double> m(3);
-	for (int i=0; i<3; i++)
-		for (int j=0; j<3; j++)
-			cin>>m[i][j];
-	SquareMatrix<double> I = identity_matrix<double>(3);
-	SquareMatrix<double> k = inverse(m);
-	Matrix<double> a = augment(m, I);
-	cout<<a<<endl;
-	a._gauss();
-	cout<<a<<endl;
-	a._gauss_jordan();
-	cout<<a<<endl;
-	cout<<k<<endl;
-	cout<<m*k<<endl;
+
+	FOR(i,0,10) {
+		// SquareMatrix<double> m = randmat();
+
+		SquareMatrix<double> a(3);
+		Matrix<double> b(3,1);
+		for (int i=0; i<3; i++)
+			for (int j=0; j<3; j++)
+				cin>>a[i][j];
+		for (int i=0; i<3; i++)
+			cin>>b[i][0];
+		SquareMatrix<double> a1 = inverse(a);
+
+		cout<<fixed<<setprecision(2);
+		cout<<a1*b<<endl;
+		cout<<endl;
+	}
 
 #ifdef soytw
     freopen("con","r",stdin);
