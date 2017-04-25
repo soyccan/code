@@ -10,7 +10,7 @@ SquareMatrix<double> randmat() {
 	return m;
 }
 main() {
-
+	SquareMatrix<int> a {{1,2,3,4}};
 	FOR(i,0,10) {
 		// SquareMatrix<double> m = randmat();
 
