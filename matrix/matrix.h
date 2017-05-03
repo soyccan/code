@@ -1,5 +1,7 @@
 // TODO: 1. solve equation
 //          for infinite solutions, use parametric equation
+//       2. pass 'rows' and 'cols' as template parameters
+//       3. replace dynamic vector with static array
 #ifndef _MATRIX_H
 #define _MATRIX_H
 #define FOR(i,start,end) for (std::size_t i=start; i<end; ++i)
@@ -30,8 +32,12 @@ namespace matrix {
             _arr(rows, std::vector<T>(cols)),
             _rows(rows),
             _cols(cols) {}
-        Matrix(std::initializer_list<std::vector<T>> list):
-            _arr(list) {}
+        Matrix(std::initializer_list<std::vector<T>> list) {
+            _arr = list;
+            _rows = _arr.size();
+            if (_rows)
+                _cols = _arr[0].size();
+        }
         std::size_t getcols() const {
             return _cols;
         }
