@@ -26,6 +26,7 @@ namespace matrix {
     class Matrix {
     public:
         Matrix():
+            _arr(),
             _rows(0),
             _cols(0) {}
         Matrix(std::size_t rows, std::size_t cols):
@@ -37,11 +38,21 @@ namespace matrix {
             _rows = _arr.size();
             if (_rows)
                 _cols = _arr[0].size();
+            else
+                _cols = 0;
         }
-        std::size_t getcols() const {
+        Matrix(std::vector<std::vector<T>> vec) {
+            _arr = vec;
+            _rows = _arr.size();
+            if (_rows)
+                _cols = _arr[0].size();
+            else
+                _cols = 0;
+        }
+        std::size_t cols() const {
             return _cols;
         }
-        std::size_t getrows() const {
+        std::size_t rows() const {
             return _rows;
         }
         bool empty() const {
@@ -87,6 +98,7 @@ namespace matrix {
         friend Matrix operator+(Matrix x, const Matrix& y) { return x += y; }
         friend Matrix operator-(Matrix x, const Matrix& y) { return x -= y; }
         friend Matrix operator*(Matrix x, T y) { return x *= y; }
+        friend Matrix operator*(T y, Matrix x) { return x *= y; }
         friend Matrix operator/(Matrix x, T y) { return x /= y; }
         friend Matrix operator%(Matrix x, T y) { return x %= y; }
         friend std::ostream& operator<<(std::ostream& os, const Matrix& x) {
@@ -104,15 +116,11 @@ namespace matrix {
         friend Matrix operator*(const Matrix& x, const Matrix& y) {
             return mul(x, y);
         }
-        template<typename Int>
-        friend Matrix operator^(const Matrix& x, Int y) {
-            return pow(x, y);
-        }
         friend bool operator==(const Matrix& x, const Matrix& y) {
-            if (x.getrows() != y.getrows() || x.getcols() != y.getcols())
+            if (x.rows() != y.rows() || x.cols() != y.cols())
                 return false;
-            FOR(i, 0, x.getrows())
-                FOR(j, 0, x.getcols())
+            FOR(i, 0, x.rows())
+                FOR(j, 0, x.cols())
                     if (sgn(x[i][j] - y[i][j]) != 0)
                         return false;
             return true;
@@ -157,22 +165,34 @@ namespace matrix {
     public:
         SquareMatrix(std::size_t size = 0):
             Matrix<T>(size, size) {}
+
         SquareMatrix(std::initializer_list<std::vector<T>> list):
             Matrix<T>(list) {}
+
+        SquareMatrix(std::vector<std::vector<T>> vec):
+            Matrix<T>(vec) {}
+
+        SquareMatrix(const Matrix<T>& matrix):
+            Matrix<T>(matrix) {}
+
+        template<typename Int>
+        friend SquareMatrix operator^(const SquareMatrix& x, Int y) {
+            return pow(x, y);
+        }
     };
 
 
 
     template<typename T>
     Matrix<T> augment(const Matrix<T>& x, const Matrix<T>& y) {
-        if (x.getrows() != y.getrows())
+        if (x.rows() != y.rows())
             throw std::invalid_argument("different row count");
-        Matrix<T> z(x.getrows(), x.getcols() + y.getcols());
-        FOR(i, 0, x.getrows()) {
-            FOR(j, 0, x.getcols())
+        Matrix<T> z(x.rows(), x.cols() + y.cols());
+        FOR(i, 0, x.rows()) {
+            FOR(j, 0, x.cols())
                 z[i][j] = x[i][j];
-            FOR(j, 0, y.getcols())
-                z[i][ j+x.getcols() ] = y[i][j];
+            FOR(j, 0, y.cols())
+                z[i][ j+x.cols() ] = y[i][j];
         }
         return z;
     }
@@ -180,12 +200,12 @@ namespace matrix {
     template<typename T>
     Matrix<T> mul(const Matrix<T>& x, const Matrix<T>& y) {
         // return empty matrix when non-multipliable
-        if (x.getcols() != y.getrows())
-            return Matrix<T>();
-        Matrix<T> z(x.getrows(), y.getcols());
-        FOR(i, 0, x.getrows())
-            FOR(j, 0, y.getcols())
-                FOR(k, 0, x.getcols())
+        if (x.cols() != y.rows())
+            throw std::invalid_argument("matrix size not match");
+        Matrix<T> z(x.rows(), y.cols());
+        FOR(i, 0, x.rows())
+            FOR(j, 0, y.cols())
+                FOR(k, 0, x.cols())
                     z[i][j] += x[i][k] * y[k][j];
         return z;
     }
@@ -195,12 +215,12 @@ namespace matrix {
         // return empty matrix when non-multipliable
         // modulo acts only on integral types
         static_assert(std::is_integral<Int>::value, "modulo not integral");
-        if (x.getcols() != y.getrows())
-            return Matrix<Int>();
-        Matrix<Int> z(x.getrows(), y.getcols());
-        FOR(i, 0, x.getrows())
-            FOR(j, 0, y.getcols())
-                FOR(k, 0, x.getcols()) {
+        if (x.cols() != y.rows())
+            throw std::invalid_argument("matrix size not match");
+        Matrix<Int> z(x.rows(), y.cols());
+        FOR(i, 0, x.rows())
+            FOR(j, 0, y.cols())
+                FOR(k, 0, x.cols()) {
                     z[i][j] += x[i][k] * y[k][j];
                     z[i][j] %= mod;
                 }
@@ -218,15 +238,15 @@ namespace matrix {
     SquareMatrix<T> pow(const SquareMatrix<T>& matrix, Int exp) {
         // quick exponentiation
         static_assert(std::is_integral<Int>::value, "exponent not integral");
-        SquareMatrix<T> x = matrix;
-        SquareMatrix<T> res = identity_matrix<T>(matrix.getrows());
+        Matrix<T> x = matrix;
+        Matrix<T> res = identity_matrix<T>(matrix.rows());
         while (exp > 0) {
             if (exp % 2 == 1)
                 res = mul(x, res);
             x = mul(x, x);
             exp /= 2;
         }
-        return res;
+        return SquareMatrix<T>(res);
     }
 
     template<typename Int>
@@ -234,7 +254,7 @@ namespace matrix {
         // quick exponentiation
         static_assert(std::is_integral<Int>::value, "modulo or exponent not integral");
         SquareMatrix<Int> x = matrix;
-        SquareMatrix<Int> res = identity_matrix<Int>(matrix.getrows());
+        SquareMatrix<Int> res = identity_matrix<Int>(matrix.rows());
         while (exp > 0) {
             if (exp % 2 == 1)
                 res = mul(x, res, mod);
@@ -246,9 +266,9 @@ namespace matrix {
 
     template<typename T>
     Matrix<T> transpose(const Matrix<T>& x) {
-        Matrix<T> y(x.cols, x.rows);
-        FOR(i, 0, y.rows)
-            FOR(j, 0, y.cols)
+        Matrix<T> y(x.cols(), x.rows());
+        FOR(i, 0, y.rows())
+            FOR(j, 0, y.cols())
                 y[i][j] = x[j][i];
         return y;
     }
@@ -261,44 +281,42 @@ namespace matrix {
     }
 
     template<typename T>
-    SquareMatrix<T> inverse(const SquareMatrix<T>& matrix) {
-        // return empty matrix when matrix not invertible
-        SquareMatrix<T> I = identity_matrix<T>(matrix.getrows());
-        Matrix<T> aug = augment(matrix, I);
-
-        aug.gauss();
-        FOR(i, 0, aug.getrows()) {
-            T lead = aug[i][i];
-            if (sgn(lead) != 0)
-                FOR(k, i, aug.getcols())
-                    aug[i][k] /= lead;
-            FOR(j, 0, i) {
-                T t = aug[j][i];
-                FOR(k, i, aug.getcols())
-                    aug[j][k] -= aug[i][k] * t;
-            }
-        }
-
-        SquareMatrix<T> res(matrix.getrows());
-        FOR(i, 0, matrix.getrows()) {
-            FOR(j, 0, matrix.getcols()) {
-                if ((i == j && sgn(aug[i][j] - 1) != 0)
-                    || (i != j && sgn(aug[i][j]) != 0)) return SquareMatrix<T>();
-                res[i][j] = aug[i][ j+matrix.getcols() ];
-            }
-        }
-        return res;
-    }
-
-    template<typename T>
     T determinant(const SquareMatrix<T>& x) {
         SquareMatrix<T> y = x;
         int sign = y.gauss();
         T res = 1;
-        FOR(i, 0, y.getrows()) res *= y[i][i];
+        FOR(i, 0, y.rows()) res *= y[i][i];
         if (sign == 1) return -res;
         else if (sign == 0) return res;
         else return 0;
+    }
+
+    template<typename T>
+    SquareMatrix<T> inverse(const SquareMatrix<T>& matrix) {
+        if (sgn(determinant(matrix)) == 0)
+            throw std::invalid_argument("matrix not invertible");
+
+        SquareMatrix<T> I = identity_matrix<T>(matrix.rows());
+        Matrix<T> aug = augment(matrix, I);
+
+        aug.gauss();
+        FOR(i, 0, aug.rows()) {
+            T lead = aug[i][i];
+            if (sgn(lead) != 0)
+                FOR(k, i, aug.cols())
+                    aug[i][k] /= lead;
+            FOR(j, 0, i) {
+                T t = aug[j][i];
+                FOR(k, i, aug.cols())
+                    aug[j][k] -= aug[i][k] * t;
+            }
+        }
+
+        SquareMatrix<T> res(matrix.rows());
+        FOR(i, 0, matrix.rows())
+            FOR(j, 0, matrix.cols())
+                res[i][j] = aug[i][ j+matrix.cols() ];
+        return res;
     }
 }
 
