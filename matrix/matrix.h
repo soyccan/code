@@ -26,37 +26,28 @@ namespace matrix {
     class Matrix {
     public:
         Matrix():
-            _arr(),
-            _rows(0),
-            _cols(0) {}
+            _arr() {}
+
         Matrix(std::size_t rows, std::size_t cols):
-            _arr(rows, std::vector<T>(cols)),
-            _rows(rows),
-            _cols(cols) {}
-        Matrix(std::initializer_list<std::vector<T>> list) {
-            _arr = list;
-            _rows = _arr.size();
-            if (_rows)
-                _cols = _arr[0].size();
+            _arr(rows, std::vector<T>(cols)) {}
+
+        Matrix(std::initializer_list<std::vector<T>> list):
+            _arr(list) {}
+
+        Matrix(std::vector<std::vector<T>> vec):
+            _arr(vec) {}
+
+        inline std::size_t rows() const {
+            return _arr.size();
+        }
+        inline std::size_t cols() const {
+            if (_arr.size())
+                return _arr[0].size();
             else
-                _cols = 0;
-        }
-        Matrix(std::vector<std::vector<T>> vec) {
-            _arr = vec;
-            _rows = _arr.size();
-            if (_rows)
-                _cols = _arr[0].size();
-            else
-                _cols = 0;
-        }
-        std::size_t cols() const {
-            return _cols;
-        }
-        std::size_t rows() const {
-            return _rows;
+                return 0;
         }
         bool empty() const {
-            return _cols == 0 && _rows == 0;
+            return rows() == 0 && cols() == 0;
         }
         const std::vector<T>& operator[](std::size_t index) const {
             return _arr[index];
@@ -65,10 +56,10 @@ namespace matrix {
             return _arr[index];
         }
         Matrix& operator+=(const Matrix& x) {
-            if (_rows != x._rows || _cols != x._cols)
+            if (rows() != x.rows() || cols() != x.cols())
                 throw std::invalid_argument("matrix size not match");
-            FOR(i, 0, _rows)
-                FOR(j, 0, _cols)
+            FOR(i, 0, rows())
+                FOR(j, 0, cols())
                     _arr[i][j] += x[i][j];
             return *this;
         }
@@ -76,20 +67,20 @@ namespace matrix {
             return *this += -x;
         }
         Matrix& operator*=(T t) {
-            FOR(i, 0, _rows)
-                FOR(j, 0, _cols)
+            FOR(i, 0, rows())
+                FOR(j, 0, cols())
                     _arr[i][j] *= t;
             return *this;
         }
         Matrix& operator/=(T t) {
-            FOR(i, 0, _rows)
-                FOR(j, 0, _cols)
+            FOR(i, 0, rows())
+                FOR(j, 0, cols())
                     _arr[i][j] /= t;
             return *this;
         }
         Matrix& operator%=(T t) {
-            FOR(i, 0, _rows)
-                FOR(j, 0, _cols)
+            FOR(i, 0, rows())
+                FOR(j, 0, cols())
                     _arr[i][j] %= t;
             return *this;
         }
@@ -102,10 +93,10 @@ namespace matrix {
         friend Matrix operator/(Matrix x, T y) { return x /= y; }
         friend Matrix operator%(Matrix x, T y) { return x %= y; }
         friend std::ostream& operator<<(std::ostream& os, const Matrix& x) {
-            FOR(i, 0, x._rows) {
-                FOR(j, 0, x._cols) {
+            FOR(i, 0, x.rows()) {
+                FOR(j, 0, x.cols()) {
                     os << x._arr[i][j];
-                    if (j == x._cols-1)
+                    if (j == x.cols()-1)
                         os << '\n';
                     else
                         os << ',' << ' ';
@@ -129,24 +120,23 @@ namespace matrix {
             return !(x == y);
         }
 
-        int gauss() {
+        bool gauss() {
             // Gaussian elimination
             // transform matrix into row echelon form
             // only use row switching and row addition
             // can be used to calculate determinant
             bool sign = 0; // whether determinant should change sign (after row switching)
-            FOR(i, 0, _rows) {
-                for (std::size_t j = i+1; j < _rows && sgn(_arr[i][i]) == 0; ++j) {
+            FOR(i, 0, rows()) {
+                for (std::size_t j = i+1; j < rows() && sgn(_arr[i][i]) == 0; ++j) {
                     std::swap(_arr[i], _arr[j]);
                     sign = !sign;
                 }
                 if (sgn(_arr[i][i]) == 0)
-                    // fail
-                    return -1;
+                    continue;
 
-                FOR(j, i+1, _rows) {
+                FOR(j, i+1, rows()) {
                     T t = _arr[j][i] / _arr[i][i];
-                    FOR(k, 0, _cols) {
+                    FOR(k, 0, cols()) {
                         _arr[j][k] -= _arr[i][k] * t;
                     }
                     _arr[j][i] = 0;
@@ -157,7 +147,6 @@ namespace matrix {
 
     private:
         std::vector< std::vector<T> > _arr;
-        std::size_t _rows, _cols;
     };
 
     template<typename T = long double>
@@ -199,7 +188,6 @@ namespace matrix {
 
     template<typename T>
     Matrix<T> mul(const Matrix<T>& x, const Matrix<T>& y) {
-        // return empty matrix when non-multipliable
         if (x.cols() != y.rows())
             throw std::invalid_argument("matrix size not match");
         Matrix<T> z(x.rows(), y.cols());
@@ -212,9 +200,7 @@ namespace matrix {
 
     template<typename Int>
     Matrix<Int> mul(const Matrix<Int>& x, const Matrix<Int>& y, Int mod) {
-        // return empty matrix when non-multipliable
         // modulo acts only on integral types
-        static_assert(std::is_integral<Int>::value, "modulo not integral");
         if (x.cols() != y.rows())
             throw std::invalid_argument("matrix size not match");
         Matrix<Int> z(x.rows(), y.cols());
@@ -237,31 +223,39 @@ namespace matrix {
     template<typename T, typename Int>
     SquareMatrix<T> pow(const SquareMatrix<T>& matrix, Int exp) {
         // quick exponentiation
-        static_assert(std::is_integral<Int>::value, "exponent not integral");
         Matrix<T> x = matrix;
         Matrix<T> res = identity_matrix<T>(matrix.rows());
-        while (exp > 0) {
-            if (exp % 2 == 1)
+        Int e = abs(exp);
+        while (e > 0) {
+            if (e % 2 == 1)
                 res = mul(x, res);
             x = mul(x, x);
-            exp /= 2;
+            e /= 2;
         }
-        return SquareMatrix<T>(res);
+
+        if (exp >= 0)
+            return SquareMatrix<T>(res);
+        else
+            return inverse(SquareMatrix<T>(res));
     }
 
     template<typename Int>
     SquareMatrix<Int> pow(const SquareMatrix<Int>& matrix, Int exp, Int mod) {
         // quick exponentiation
-        static_assert(std::is_integral<Int>::value, "modulo or exponent not integral");
-        SquareMatrix<Int> x = matrix;
-        SquareMatrix<Int> res = identity_matrix<Int>(matrix.rows());
-        while (exp > 0) {
-            if (exp % 2 == 1)
+        Matrix<Int> x = matrix;
+        Matrix<Int> res = identity_matrix<Int>(matrix.rows());
+        Int e = abs(exp);
+        while (e > 0) {
+            if (e % 2 == 1)
                 res = mul(x, res, mod);
             x = mul(x, x, mod);
-            exp /= 2;
+            e /= 2;
         }
-        return res;
+
+        if (exp >= 0)
+            return SquareMatrix<Int>(res);
+        else
+            return inverse(SquareMatrix<Int>(res));
     }
 
     template<typename T>
@@ -294,7 +288,7 @@ namespace matrix {
     template<typename T>
     SquareMatrix<T> inverse(const SquareMatrix<T>& matrix) {
         if (sgn(determinant(matrix)) == 0)
-            throw std::invalid_argument("matrix not invertible");
+            throw std::runtime_error("matrix not invertible");
 
         SquareMatrix<T> I = identity_matrix<T>(matrix.rows());
         Matrix<T> aug = augment(matrix, I);
