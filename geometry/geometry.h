@@ -7,7 +7,24 @@
 #include <vector>
 #include <exception>
 
-namespace Geometry {
+namespace geometry {
+
+  enum LineRelation {INTERSECT, COINCIDENT, PARALLEL, SKEW};
+
+  const long double EPS = 1e-10;
+  const long double INF = std::numeric_limits<long double>::infinity();
+
+  template<typename T>
+  inline int sgn(T x) {
+    if (x > EPS)
+      return 1;
+    else if (x < -EPS)
+      return -1;
+    else
+      return 0;
+  }
+
+
   template<typename T = long double>
   class _VectorBase {
   public:
@@ -129,21 +146,6 @@ namespace Geometry {
   };
 
 
-  enum LineRelation {INTERSECT, COINCIDENT, PARALLEL, SKEW};
-
-  const long double EPS = 1e-10;
-  const long double INF = std::numeric_limits<long double>::infinity();
-
-  template<typename T>
-  inline int sgn(T x) {
-    if (x > EPS)
-      return 1;
-    else if (x < -EPS)
-      return -1;
-    else
-      return 0;
-  }
-
   // _VectorBase
     template<typename T>
     T abs(const _VectorBase<T>& v) {
@@ -163,13 +165,10 @@ namespace Geometry {
     }
 
     template<typename T>
-    T det(const _VectorBase<T>& u, const _VectorBase<T>& v, const _VectorBase<T>& w) {
-      return u.x * v.y * w.z
-           + w.x * u.y * v.z
-           + v.x * w.y * u.z
-           - w.x * v.y * u.z
-           - u.x * w.y * v.z
-           - v.x * u.y * w.z;
+    T det(const _VectorBase<T>& u,
+          const _VectorBase<T>& v,
+          const _VectorBase<T>& w) {
+      return dot(u, cross(v, w));
     }
 
     // template<typename T>
