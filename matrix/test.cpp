@@ -10,26 +10,32 @@ SquareMatrix<double> randmat() {
 	return m;
 }
 main() {
-	SquareMatrix<int> a {{1,2,3,4}};
-	FOR(i,0,10) {
-		// SquareMatrix<double> m = randmat();
+	SquareMatrix<double> a {
+		{1,7,3},
+		{0,0,0},
+		{0,0,0}
+	};
+	a.gauss();
+	cout<<a;
 
-		SquareMatrix<double> a(3);
-		Matrix<double> b(3,1);
-		for (int i=0; i<3; i++)
-			for (int j=0; j<3; j++)
-				cin>>a[i][j];
-		for (int i=0; i<3; i++)
-			cin>>b[i][0];
-		SquareMatrix<double> a1 = inverse(a);
+	// FOR(i,0,10) {
+	// 	SquareMatrix<double> m = randmat();
 
-		cout<<fixed<<setprecision(2);
-		cout<<a1*b<<endl;
-		cout<<endl;
-	}
+	// 	SquareMatrix<double> a(3);
+	// 	Matrix<double> b(3,1);
+	// 	for (int i=0; i<3; i++)
+	// 		for (int j=0; j<3; j++)
+	// 			cin>>a[i][j];
+	// 	for (int i=0; i<3; i++)
+	// 		cin>>b[i][0];
+	// 	SquareMatrix<double> a1 = inverse(a);
+
+	// 	cout<<fixed<<setprecision(2);
+	// 	cout<<a1*b<<endl;
+	// 	cout<<endl;
+	// }
 
 #ifdef soytw
-    freopen("con","r",stdin);
     system("pause");
 #endif
     return 0;
