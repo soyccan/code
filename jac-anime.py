@@ -4,10 +4,13 @@ from http.cookiejar import CookieJar
 import re, os.path, time, sys, math, shutil
 
 def human_size(size, decimals = 2):
-  unit = ('Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
-  factor = int(math.log2(size) // 10)
-  if factor > 8: factor = 8
-  return "{0:.{2}f}{1}".format(size / (1 << (10 * factor)), unit[factor], decimals)
+    if size <= 0:
+        return '0'
+    unit = ('Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
+    factor = int(math.log2(size) // 10)
+    if factor > 8:
+        factor = 8
+    return "{0:.{2}f}{1}".format(size / (1 << (10 * factor)), unit[factor], decimals)
 
 def try_other_filename(filename):
     base, ext = os.path.splitext(filename)
@@ -20,14 +23,15 @@ def get_jac_video(index_page):
     # return list of (video id, filename) pairs
     res = []
     try:
+        print('Connecting', index_page)
         html = urlopen(index_page, timeout=30).read()
     except URLError:
         sys.stderr.write('Error when connecting!')
         return res
 
-    for i, match in enumerate(re.finditer(br'https://drive\.google\.com/file/d/([^/]+)', html)):
+    for i, match in enumerate(re.finditer(br'https://(drive|docs)\.google\.com/file/d/([^/]+)', html)):
         res.append((
-            match.group(1).decode(),
+            match.group(2).decode(),
             '{:02}.mp4'.format(i+1) ))
     return res
 
@@ -37,31 +41,36 @@ def dl_jac_video(url_filename_list):
 
     for videoid, filename in url_filename_list:
         if os.path.exists(filename):
-            print('File "{}" exist, '.format(filename), end='')
-            filename = try_other_filename(filename)
-            print('changing filename to "{}"'.format(filename))
+            print('Ignoring exisiting file "{}"'.format(filename))
+            # filename = try_other_filename(filename)
+            # print('changing filename to "{}"'.format(filename))
+            continue
 
         ck = CookieJar()
         rq = Request("https://drive.google.com/uc?export=download&id=" + videoid)
         try:
             rp = urlopen(rq, timeout=10)
         except URLError:
-            sys.stderr.write('[ERROR] when connecting: ID "{}" / file "{}"'.format(videoid, filename))
+            sys.stderr.write('[ERROR] when connecting: ID "{}" / file "{}"\n'.format(videoid, filename))
             continue
 
         ck.extract_cookies(rp, rq)
 
-        dllink = re.search(
-            rb'uc-download-link[^>]*href="([^>"]*)"',
-            rp.read()).group(1).decode().replace('&amp;', '&')
+        try:
+            dllink = re.search(
+                rb'uc-download-link[^>]*href="([^>"]*)"',
+                rp.read()).group(1).decode().replace('&amp;', '&')
+        except:
+            sys.stderr.write('[ERROR] while downloading: ID "{}" / file "{}"\n'.format(videoid, filename))
+            continue
 
         rq1 = Request('https://drive.google.com' + dllink)
         ck.add_cookie_header(rq1)
         with urlopen(rq1) as rp1, \
               open(filename, 'wb') as f1:
             print('Downloading video ID "{}" to file "{}"'.format(videoid, filename))
-            if rp1.getheader('Content-Type') != 'video/mp4':
-                print('Error on file "{}"'.format(filename))
+            if rp1.getheader('Content-Type') not in ('video/mp4', 'video/x-matroska'):
+                sys.stderr.write('Error on file "{}"\n'.format(filename))
                 continue
 
             blksz = 1024 * 1024 * 16
@@ -85,14 +94,17 @@ def dl_jac_video(url_filename_list):
                     human_size(dlsz)))
 
     total_spend = time.clock() - total_start_tm
-    sys.stdout.write('\n\nTotal Spent: {:.2f}\nTotal Size: {}\nAverage Download Speed: {}/s\n'.format(
+    sys.stdout.write(
+        '\n\nTotal Spent: {:.2f}\n'
+        'Total Size: {}\n'
+        'Average Download Speed: {}/s\n'.format(
         total_spend, human_size(total_sz), human_size(total_sz / total_spend)))
 
 print('Jac Animation Downloader')
-if len(sys.argv) >= 3 and sys.argv[1:] == '-u':
+if len(sys.argv) >= 3 and sys.argv[1] == '-u':
     l = get_jac_video(sys.argv[2])
     dl_jac_video(l)
-elif len(sys.argv) >= 3 and sys.argv[1:] == '-f':
+elif len(sys.argv) >= 3 and sys.argv[1] == '-f':
     l = []
     for line in open(sys.argv[2]):
         (videoid, filename) = line.split()
