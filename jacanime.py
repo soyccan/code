@@ -19,6 +19,10 @@ def try_other_filename(filename):
         if not os.path.exists(newname):
             return newname
 
+def print_err(videoid, filename):
+    sys.stderr.write(
+        '[ERROR] when downloading: ID "{}" / file "{}"\n'.format(videoid, filename))
+
 def get_jac_video(index_page):
     # return list of (video id, filename) pairs
     res = []
@@ -26,12 +30,13 @@ def get_jac_video(index_page):
         print('Connecting', index_page)
         html = urlopen(index_page, timeout=30).read()
     except URLError:
-        sys.stderr.write('Error when connecting!')
+        sys.stderr.write('Error on connection!')
         return res
 
-    for i, match in enumerate(re.finditer(br'https://(drive|docs)\.google\.com/file/d/([^/]+)', html)):
+    pattern = br'https://(drive|docs)\.google\.com/(open\?id=|file/d/)([^/"]+)'
+    for i, match in enumerate(re.finditer(pattern, html)):
         res.append((
-            match.group(2).decode(),
+            match.group(3).decode(),
             '{:02}.mp4'.format(i+1) ))
     return res
 
@@ -51,7 +56,7 @@ def dl_jac_video(url_filename_list):
         try:
             rp = urlopen(rq, timeout=10)
         except URLError:
-            sys.stderr.write('[ERROR] when connecting: ID "{}" / file "{}"\n'.format(videoid, filename))
+            print_err(videoid, filename)
             continue
 
         ck.extract_cookies(rp, rq)
@@ -61,16 +66,16 @@ def dl_jac_video(url_filename_list):
                 rb'uc-download-link[^>]*href="([^>"]*)"',
                 rp.read()).group(1).decode().replace('&amp;', '&')
         except:
-            sys.stderr.write('[ERROR] while downloading: ID "{}" / file "{}"\n'.format(videoid, filename))
+            print_err(videoid, filename)
             continue
 
         rq1 = Request('https://drive.google.com' + dllink)
         ck.add_cookie_header(rq1)
         with urlopen(rq1) as rp1, \
               open(filename, 'wb') as f1:
-            print('Downloading video ID "{}" to file "{}"'.format(videoid, filename))
+            print('Downloading video ID "{}" as file "{}"'.format(videoid, filename))
             if rp1.getheader('Content-Type') not in ('video/mp4', 'video/x-matroska'):
-                sys.stderr.write('Error on file "{}"\n'.format(filename))
+                print_err(videoid, filename)
                 continue
 
             blksz = 1024 * 1024 * 16
@@ -100,19 +105,19 @@ def dl_jac_video(url_filename_list):
         'Average Download Speed: {}/s\n'.format(
         total_spend, human_size(total_sz), human_size(total_sz / total_spend)))
 
-print('Jac Animation Downloader')
-if len(sys.argv) >= 3 and sys.argv[1] == '-u':
-    l = get_jac_video(sys.argv[2])
-    dl_jac_video(l)
-elif len(sys.argv) >= 3 and sys.argv[1] == '-f':
-    l = []
-    for line in open(sys.argv[2]):
-        (videoid, filename) = line.split()
-        l.append((videoid, filename))
-    dl_jac_video(l)
-else:
-    print('Usage: {} [-f file containing urls and filenames] [-u index page]'.format(sys.argv[0]))
+if __name__ == '__main__':
+    print('Jac Animation Downloader')
+    if len(sys.argv) >= 3 and sys.argv[1] == '-u':
+        l = get_jac_video(sys.argv[2])
+        dl_jac_video(l)
+    elif len(sys.argv) >= 3 and sys.argv[1] == '-f':
+        l = []
+        for line in open(sys.argv[2]):
+            (videoid, filename) = line.split()
+            l.append((videoid, filename))
+        dl_jac_video(l)
+    else:
+        print('Usage: {} [-f file containing urls and filenames] [-u index page]'.format(sys.argv[0]))
 
-
-# dl_jac_video([('0B1H-WTo5XmcrdDlPYm1YSXZMMTQ', 'xx.mp4')])
-# https://www.googleapis.com/drive/v3/files/0B62NacqK6vZnRVMtSDFLbkVEUGs
+    # dl_jac_video([('0B1H-WTo5XmcrdDlPYm1YSXZMMTQ', 'xx.mp4')])
+    # https://www.googleapis.com/drive/v3/files/0B62NacqK6vZnRVMtSDFLbkVEUGs
