@@ -2,33 +2,16 @@
 #ifndef _BIGNUM_H
 #define _BIGNUM_H
 
-#define FOR(i,l,r) for (size_t i=l; i<r; i++)
+#define FOR(i,l,r) for (std::size_t i=l; i<r; i++)
 
 #include <vector>
-using std::vector;
-
 #include <cstddef>
-using std::size_t;
-
 #include <cstdint>
-using std::int64_t;
-using std::int8_t;
-
 #include <cctype>
-using std::isdigit;
-
 #include <string>
-using std::string;
-
 #include <istream>
-using std::istream;
-
 #include <ostream>
-using std::ostream;
-
 #include <cmath>
-using std::max;
-using std::ceil;
 
 class BigNum {
 public:
@@ -41,10 +24,10 @@ public:
     BigNum(const BigNum& x) {
         *this = x;
     }
-    BigNum(const string& x) {
+    BigNum(const std::string& x) {
         *this = x;
     }
-    BigNum(int64_t x) {
+    BigNum(std::int64_t x) {
         *this = x;
     }
     BigNum& operator=(const BigNum& x) {
@@ -52,16 +35,16 @@ public:
         _sign = x._sign;
         return *this;
     }
-    BigNum& operator=(const string& x) {
+    BigNum& operator=(const std::string& x) {
         // TODO: verify
         _arr.clear();
         _sign = (x[0] == '-');
         for (int i=x.size()-1; i>=0; i--)
-            if (isdigit(x[i]))
+            if (std::isdigit(x[i]))
                 _arr.push_back(x[i]-'0');
         return *this;
     }
-    BigNum& operator=(int64_t x) {
+    BigNum& operator=(std::int64_t x) {
         _sign = (x < 0);
         _arr.clear();
         if (x < 0) x = -x;
@@ -106,17 +89,17 @@ public:
     friend BigNum operator/(BigNum x, const BigNum& y) {
         return x /= y;
     }
-    friend ostream& operator<<(ostream& os, const BigNum& x) {
+    friend std::ostream& operator<<(std::ostream& os, const BigNum& x) {
         return os << to_string(x);
     }
-    friend istream& operator>>(istream& is, BigNum& x) {
-        string s;
+    friend std::istream& operator>>(std::istream& is, BigNum& x) {
+        std::string s;
         is >> s;
         x = s;
         return is;
     }
-    friend string to_string(const BigNum& x) {
-        string s;
+    friend std::string to_string(const BigNum& x) {
+        std::string s;
         if (x._sign) s += '-';
         for (int i=x._arr.size()-1; i>=0; i--)
             s += '0' + x._arr[i];
@@ -150,13 +133,13 @@ public:
     friend operator>=(const BigNum& x, const BigNum& y) {
         return !(x < y);
     }
-    // size_t size() const {
+    // std::size_t size() const {
     //     return _arr.size();
     // }
 
 private:
-    vector<int8_t> _arr; // TODO: determine suitable data type
-                         // (not overflowing on multiplication)
+    std::vector<std::int8_t> _arr; // TODO: determine suitable data type
+                                   // (not overflowing on multiplication)
     bool _sign; // true for negative
 
     void _carry() {
@@ -166,7 +149,7 @@ private:
                 _arr[i] %= 10;
             } else {
                 // warning: floating point unprecision
-                int borrow = ceil(_arr[i]/-10.);
+                int borrow = std::ceil(_arr[i]/-10.);
                 _arr[i+1] -= borrow;
                 _arr[i] += borrow*10;
              }
@@ -181,14 +164,14 @@ private:
             _arr.pop_back();
     }
     BigNum& _iadd(const BigNum& x) { // in place
-        _arr.resize(max(_arr.size(), x._arr.size()) + 1);
+        _arr.resize(std::max(_arr.size(), x._arr.size()) + 1);
         FOR(i, 0, x._arr.size())
             _arr[i] += x._arr[i];
         _carry();
         return *this;
     }
     BigNum& _isub(const BigNum& x) { // in place
-        _arr.resize(max(_arr.size(), x._arr.size()) + 1);
+        _arr.resize(std::max(_arr.size(), x._arr.size()) + 1);
         FOR(i, 0, x._arr.size())
             _arr[i] -= x._arr[i];
         _carry();

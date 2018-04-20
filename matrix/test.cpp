@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include "matrix.h"
+#define int long long
 #define MS(s,v) memset(s,v,sizeof(s))
 #define FOR(i,start,end) for (int i=start; i<end; ++i)
 using namespace std;
@@ -10,13 +11,16 @@ SquareMatrix<double> randmat() {
 	return m;
 }
 main() {
-	SquareMatrix<double> a {
-		{1,7,3},
-		{0,0,0},
-		{0,0,0}
-	};
-	a.gauss();
-	cout<<a;
+	Matrix<double> A { {1}, {2} };
+	SquareMatrix<double> P { {1,2}, {1,0} };
+	SquareMatrix<double> Q { {2,1}, {1,-1} };
+	Matrix<double> R = inverse(Q) * P * Q;
+	cout<<R<<endl;
+
+	int dp[100];
+	dp[1] = 1, dp[2] = 2;
+	for (int i=3; i<100; i++)
+		cout << i << ' ' << (1LL<<(i-1)) << ' ' << (dp[i] = dp[i-1]+2*dp[i-2]) << endl;
 
 	// FOR(i,0,10) {
 	// 	SquareMatrix<double> m = randmat();
