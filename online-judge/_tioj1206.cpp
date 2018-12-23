@@ -1,10 +1,4 @@
-#include <bits/stdc++.h>
-#define int long long
-#define MS(s,v) memset(s,v,sizeof(s))
-#define _FOR(i,start,end,step) for (int i=start; i!=end; i+=step)
-#define FOR(i,start,end) for (int i=start; i<end; ++i)
-using namespace std;
-const long long INF = 0x3f3f3f3f3f3f3f3fLL;
+// kmp
 int fail[200005];
 main() {
 #ifdef soytw
