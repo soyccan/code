@@ -1,5 +1,6 @@
 // toj389
 // undone
+// cut vertex
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
